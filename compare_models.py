@@ -13,6 +13,7 @@ if __name__ == '__main__':
     plot_close_price_by_time(pd.concat([train, test]), show=False)
 
     train_transformed, test_transformed = transform_data(train, test)
+    plot_close_price_by_time(pd.concat([train_transformed, test_transformed]), title='BTC Log Returns', pic_name='log_returns', show=True)
 
     # Lag transform, X - today, y - tomorrow
     X_train = train_transformed[['Close']].iloc[:-1]

@@ -3,15 +3,15 @@ import seaborn as sns
 import matplotlib.dates as mdates
 import pandas as pd
 
-def plot_close_price_by_time(df: pd.DataFrame, show: bool=True):
+def plot_close_price_by_time(df: pd.DataFrame, title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):
     fig = plt.figure(figsize=(10, 6))
     ax = sns.lineplot(data=df, x='Date', y='Close', color='black')
     ax.xaxis.set_major_locator(mdates.YearLocator(base=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-    plt.title("Close price by time")
+    plt.title(title)
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout() # Ensures labels aren't cut off
-    plt.savefig('plots/close_price.png')
+    plt.savefig(f'plots/{pic_name}.png')
     if show:
         plt.show()
     plt.close(fig)
