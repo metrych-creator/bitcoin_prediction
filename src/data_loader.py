@@ -51,10 +51,11 @@ def inverse_transform_predictions(preds_log_diff: pd.Series, original_prices: pd
     """
     Converts forecasts from log-diff format back to dollars (USD)
     """
-    prev_prices = original_prices.shift(1)
+    prev_prices = original_prices.shift(1).copy()
     prev_prices.iloc[0] = last_train_price
     
     # log_price_pred = log(price_prev) + log_diff_pred
-    log_preds = np.log(prev_prices) + preds_log_diff
+    log_preds = np.log(prev_prices.values.flatten()) + np.array(preds_log_diff).flatten()
     
-    return np.exp(log_preds)
+    # return np.exp(log_preds)
+    return pd.Series(np.exp(log_preds), index=original_prices.index)

@@ -9,19 +9,18 @@ from plots import plot_prediction, plot_close_price_by_time
 if __name__ == '__main__':
 
     df = pd.read_csv('data/Bitcoin_history_data.csv')
-
     train, test = prepare_data(df)
-
-    plot_close_price_by_time(pd.concat([train, test]))
+    plot_close_price_by_time(pd.concat([train, test]), show=False)
 
     train_transformed, test_transformed = transform_data(train, test)
 
-    # 2. Split
-    X_train = train_transformed[['Close']]  # DataFrame
-    y_train = train_transformed['Close']    # Series
+    # Lag transform, X - today, y - tomorrow
+    X_train = train_transformed[['Close']].iloc[:-1]
+    y_train = train_transformed['Close'].shift(-1).dropna()
 
-    X_test = test_transformed[['Close']]
-    y_test = test_transformed['Close']
+    X_test = test_transformed[['Close']].iloc[:-1]
+    y_test = test_transformed['Close'].shift(-1).dropna()
+    test_prices_actual = test['Close'].iloc[1:]
 
     # 3. Models initialization
     baseline_model = NaiveBaseline()
@@ -39,10 +38,13 @@ if __name__ == '__main__':
         m.train(X_train=X_train, y_train=y_train) # fitting
         raw_preds = m.predict(X_test)
 
-        preds = inverse_transform_predictions(raw_preds, test['Close'], last_train_price=train['Close'][-1])
+        preds = inverse_transform_predictions(
+            raw_preds, 
+            test_prices_actual, 
+            last_train_price=train['Close'].iloc[-1])
 
-        plot_prediction(test, preds, m.name)
-        res = m.evaluate(preds, y_test)
+        plot_prediction(test.iloc[1:], preds, m.name, show=False)
+        res = m.evaluate(test['Close'].iloc[1:], preds)
         results.append(res)
 
 

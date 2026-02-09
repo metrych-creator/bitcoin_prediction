@@ -10,18 +10,16 @@ class NaiveBaseline:
         self.last_train_value = None
 
     def fit(self, X: pd.DataFrame, y: pd.Series):
-        self.last_train_value = y.iloc[-1]
+        self.last_value_ = y.iloc[-1]
+        return self
 
     def predict(self, X: pd.DataFrame) -> pd.Series:
-        if isinstance(X, pd.Series):
-            X = X.to_frame()
-            
         preds = X.shift(1)
 
-        if self.last_train_value is not None:
-            preds.iloc[0] = self.last_train_value
+        # use last value from train to predict first value in test
+        if self.last_value_ is not None:
+            preds.iloc[0] = self.last_value_
 
-        # Convert DataFrame to Series before returning
-        return preds.iloc[:, 0]
+        return preds
     
     
