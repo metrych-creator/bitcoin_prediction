@@ -2,6 +2,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.dates as mdates
 import pandas as pd
+from statsmodels.tsa.stattools import pacf
+from statsmodels.graphics.tsaplots import plot_pacf as sm_plot_pacf
+from statsmodels.tsa.seasonal import seasonal_decompose
+
 
 def plot_close_price_by_time(df: pd.DataFrame, title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):
     fig = plt.figure(figsize=(10, 6))
@@ -30,8 +34,51 @@ def plot_prediction(test: pd.DataFrame, y_pred: pd.Series, model_name: str, show
     plt.xticks(rotation=45, ha='right')
     plt.tight_layout() # Ensures labels aren't cut off
     plt.legend()
-
     plt.savefig(f'plots/prediction_{model_name}.png')
     if show:
         plt.show()
     plt.close(fig)
+
+
+def plot_acf(df: pd.DataFrame, max_lags: int, pic_name: str, title: str = "Autocorrelation Plot", show: bool=True):
+    plt.acorr(df, maxlags = max_lags)
+    plt.title(title) 
+    plt.xlabel("Lags")
+    plt.grid(True)
+    plt.savefig(f"plots/{pic_name}.png")
+    if show:
+        plt.show() 
+    plt.close()
+
+
+def plot_pacf(df: pd.DataFrame, n_lags: int, pic_name: str, title: str = "PACF", show: bool=True):
+    fig = plt.figure(figsize=(10, 5))
+    sm_plot_pacf(df, lags=n_lags)
+    plt.title(title)
+    plt.xlabel('Lags')
+    plt.ylabel('PACF')
+    plt.grid(True)
+    plt.savefig(f'plots/{pic_name}.png')
+    if show:
+        plt.show()
+    plt.close(fig)
+
+
+def plot_decomposition(df: pd.DataFrame, model: str='additive', period: int=365, show: bool=True):
+    # additive in stationarized data
+    result = seasonal_decompose(df['Close'], model=model, period=period)
+    
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(12, 10), sharex=True)
+    
+    fig.suptitle(f"Model Decomposition - Period {period}", fontsize=16)
+    
+    result.observed.plot(ax=ax1, color='black', title='Observed (Original Data)')
+    result.trend.plot(ax=ax2, color='blue', title='Trend (Long-term movement)')
+    result.seasonal.plot(ax=ax3, color='green', title='Seasonality (Repeating patterns)', )
+    result.resid.plot(ax=ax4, color='red', style='.', title='Residuals (Random Noise)')
+    plt.tight_layout()
+    plt.savefig(f'plots/model_decomposition_stationary_p_{period}.png')
+
+    if show:
+        plt.show()
+    plt.close()

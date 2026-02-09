@@ -3,14 +3,13 @@ from src.wrapper import RegressionWrapper
 from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 from src.trainers.NaiveBaseline import NaiveBaseline
-from plots import plot_prediction, plot_close_price_by_time
+from plots import plot_prediction
 
 
 if __name__ == '__main__':
 
     df = pd.read_csv('data/Bitcoin_history_data.csv')
     train, test = prepare_data(df)
-    plot_close_price_by_time(pd.concat([train, test]), show=False)
 
     train_transformed, test_transformed = transform_data(train, test)
     plot_close_price_by_time(pd.concat([train_transformed, test_transformed]), title='BTC Log Returns', pic_name='log_returns', show=True)
