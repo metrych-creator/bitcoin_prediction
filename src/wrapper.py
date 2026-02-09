@@ -17,11 +17,12 @@ class RegressionWrapper:
         print(f"Training of model: {self.name}...")
         self.model.fit(X_train, y_train)
 
-    def evaluate(self, X_test: pd.DataFrame, y_test: pd.Series) -> dict:
+    def predict(self, X_test: pd.DataFrame) -> pd.Series:
+        return self.model.predict(X_test)
+        
+    def evaluate(self, y_test: pd.Series, predictions: pd.Series) -> dict:
         """Calculates MAE and MAPE errors on the test set and saves them in the self.metrics attribute."""
 
-        predictions = self.model.predict(X_test)
-        
         self.metrics = {
             "model_name": self.name,
             "mae": round(mean_absolute_error(y_test, predictions), 4),

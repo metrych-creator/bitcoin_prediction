@@ -12,7 +12,7 @@ class NaiveBaseline:
     def fit(self, X: pd.DataFrame, y: pd.Series):
         self.last_train_value = y.iloc[-1]
 
-    def predict(self, X: pd.DataFrame) -> pd.Series :
+    def predict(self, X: pd.DataFrame) -> pd.Series:
         if isinstance(X, pd.Series):
             X = X.to_frame()
             
@@ -21,7 +21,7 @@ class NaiveBaseline:
         if self.last_train_value is not None:
             preds.iloc[0] = self.last_train_value
 
-        # preds.iloc[0] = self.last_train_values
-        return preds
+        # Convert DataFrame to Series before returning
+        return preds.iloc[:, 0]
     
     
