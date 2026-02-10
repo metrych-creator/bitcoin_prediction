@@ -25,7 +25,7 @@ class RegressionWrapper:
 
         self.metrics = {
             "model_name": self.name,
-            "mae": round(mean_absolute_error(y_test, predictions), 4),
-            "mape": round(mean_absolute_percentage_error(y_test, predictions), 4),
+            "MAE": round(mean_absolute_error(y_test, predictions), 4),
+            "MAPE": round(mean_absolute_percentage_error(y_test, predictions), 4),
         }
         return self.metrics

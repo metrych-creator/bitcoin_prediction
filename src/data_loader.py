@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from src.tools import DateFormatter, TimeSeriesImputer, LogTransformer, DiffTransformer
+from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifter
 from typing import Tuple, cast
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -35,27 +35,35 @@ def prepare_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     return cast(pd.DataFrame, train_cleaned), cast(pd.DataFrame, test_cleaned)
 
 
-def transform_data(train: pd.DataFrame, test: pd.DataFrame):
-    pipeline = Pipeline([ 
-        ('log', LogTransformer(column='Close')),
-        ('diff', DiffTransformer(degree=1, verbose=True))
+def transform_data(train: pd.DataFrame, test: pd.DataFrame, verbose: bool=True):
+    pipeline = Pipeline([
+        ('tech_features', TechnicalFeaturesAdder()), # RSI, Bollinger Prc
+        ('log', LogTransformer()),
+        ('diff', DiffTransformer(degree=1, verbose=verbose)),
+        ('engineer', FeatureEngineer()), # MA, Lags, Vol
+        ('shifter', TimeSeriesShifter(target_col='Close_log_return'))
     ])
     
-    train_transformed = pipeline.fit_transform(train)
-    test_transformed = pipeline.transform(test)
+    train_transformed = pipeline.fit_transform(train).dropna()
+    test_transformed = pipeline.transform(test).dropna()
 
-    return cast(pd.DataFrame, train_transformed), cast (pd.DataFrame, test_transformed)
+    cols_to_drop = ['Open', 'High', 'Close', 'Low', 'Volume', 'target_next_day']
 
-
-def inverse_transform_predictions(preds_log_diff: pd.Series, original_prices: pd.Series, last_train_price: float) -> pd.Series:
-    """
-    Converts forecasts from log-diff format back to dollars (USD)
-    """
-    prev_prices = original_prices.shift(1).copy()
-    prev_prices.iloc[0] = last_train_price
+    X_train = train_transformed.drop(columns=cols_to_drop)
+    y_train = train_transformed['target_next_day']
     
-    # log_price_pred = log(price_prev) + log_diff_pred
-    log_preds = np.log(prev_prices.values.flatten()) + np.array(preds_log_diff).flatten()
+    X_test = test_transformed.drop(columns=cols_to_drop)
+    y_test = test_transformed['target_next_day']
     
-    # return np.exp(log_preds)
-    return pd.Series(np.exp(log_preds), index=original_prices.index)
+    return X_train, y_train, X_test, y_test
+
+
+def inverse_transform_predictions(preds_log_diff: pd.Series, original_prices: pd.Series) -> pd.Series:
+    """
+    Converts forecasts from log-diff format back to dollars (USD).
+    """
+
+    preds = np.array(preds_log_diff).flatten()
+    prices = np.array(original_prices).flatten()
+
+    return np.exp(np.log(prices) + preds)

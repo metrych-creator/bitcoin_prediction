@@ -7,9 +7,9 @@ from statsmodels.graphics.tsaplots import plot_pacf as sm_plot_pacf
 from statsmodels.tsa.seasonal import seasonal_decompose
 
 
-def plot_close_price_by_time(df: pd.DataFrame, title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):
+def plot_close_price_by_time(df: pd.DataFrame, y='Close', title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):
     fig = plt.figure(figsize=(10, 6))
-    ax = sns.lineplot(data=df, x='Date', y='Close', color='black')
+    ax = sns.lineplot(data=df, x='Date', y=y, color='black')
     ax.xaxis.set_major_locator(mdates.YearLocator(base=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
     plt.title(title)
@@ -24,7 +24,7 @@ def plot_close_price_by_time(df: pd.DataFrame, title: str ="BTC Close Price Over
 def plot_prediction(test: pd.DataFrame, y_pred: pd.Series, model_name: str, show: bool=True):
     fig = plt.figure(figsize=(10, 6))
 
-    ax = sns.lineplot(x=test.index, y=test['Close'], color='royalblue', alpha=1, label = 'Actual')
+    ax = sns.lineplot(x=test.index, y=test, color='royalblue', alpha=1, label = 'Actual')
     sns.lineplot(x=test.index, y=y_pred, color='darkorange', alpha=1, linewidth=0.3, label='Predicted', linestyle='--')
 
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
@@ -41,6 +41,7 @@ def plot_prediction(test: pd.DataFrame, y_pred: pd.Series, model_name: str, show
 
 
 def plot_acf(df: pd.DataFrame, max_lags: int, pic_name: str, title: str = "Autocorrelation Plot", show: bool=True):
+    fig = plt.figure(figsize=(10, 6))
     plt.acorr(df, maxlags = max_lags)
     plt.title(title) 
     plt.xlabel("Lags")
@@ -48,11 +49,11 @@ def plot_acf(df: pd.DataFrame, max_lags: int, pic_name: str, title: str = "Autoc
     plt.savefig(f"plots/{pic_name}.png")
     if show:
         plt.show() 
-    plt.close()
+    plt.close(fig)
 
 
 def plot_pacf(df: pd.DataFrame, n_lags: int, pic_name: str, title: str = "PACF", show: bool=True):
-    fig = plt.figure(figsize=(10, 5))
+    fig = plt.figure(figsize=(10, 6))
     sm_plot_pacf(df, lags=n_lags)
     plt.title(title)
     plt.xlabel('Lags')
@@ -66,7 +67,7 @@ def plot_pacf(df: pd.DataFrame, n_lags: int, pic_name: str, title: str = "PACF",
 
 def plot_decomposition(df: pd.DataFrame, model: str='additive', period: int=365, show: bool=True):
     # additive in stationarized data
-    result = seasonal_decompose(df['Close'], model=model, period=period)
+    result = seasonal_decompose(df['Close_log_return'], model=model, period=period)
     
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(12, 10), sharex=True)
     
