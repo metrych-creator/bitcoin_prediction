@@ -1,6 +1,5 @@
 from plots import plot_close_price_by_time, plot_decomposition, plot_acf, plot_pacf, plot_feature_importance
 import pandas as pd
-from src.data_loader import prepare_data, transform_data
 
 
 def make_EDA(df):

@@ -45,7 +45,17 @@ def transform_data(train: pd.DataFrame, test: pd.DataFrame, verbose: bool=True):
     ])
     
     train_transformed = pipeline.fit_transform(train).dropna()
-    test_transformed = pipeline.transform(test).dropna()
+
+    context_size = 365 # rows from train to remember 
+
+    # test data with needed context from train
+    test_with_context = pd.concat([train.tail(context_size), test])
+    test_transformed_full = pipeline.transform(test_with_context)
+    
+    # filter data from test
+    test_transformed = test_transformed_full.loc[test.index].dropna()
+
+    # test_transformed = pipeline.transform(test).dropna()
 
     cols_to_drop = ['Open', 'High', 'Close', 'Low', 'Volume', 'target_next_day']
 

@@ -1,4 +1,4 @@
-from src.data_loader import prepare_data, transform_data, inverse_transform_predictions
+from src.data_processor import prepare_data, transform_data, inverse_transform_predictions
 from src.wrapper import RegressionWrapper
 from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
