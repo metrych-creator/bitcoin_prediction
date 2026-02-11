@@ -1,4 +1,4 @@
-from plots import plot_close_price_by_time, plot_decomposition, plot_acf, plot_pacf
+from plots import plot_close_price_by_time, plot_decomposition, plot_acf, plot_pacf, plot_feature_importance
 import pandas as pd
 from src.data_loader import prepare_data, transform_data
 
@@ -21,6 +21,9 @@ def make_EDA(df):
 
     plot_decomposition(X_train, period=7, show=True)
     plot_decomposition(X_train, period=365, show=True)
+
+    # feature importance
+    plot_feature_importance(show=True)
 
 
 df = pd.read_csv('data/Bitcoin_history_data.csv')

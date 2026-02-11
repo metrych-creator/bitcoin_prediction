@@ -13,10 +13,10 @@ if __name__ == '__main__':
     
     # train_transformed, test_transformed = transform_data(train, test)
     train, test = prepare_data(df)
-    X_train, y_train, X_test, y_test = transform_data(train, test)
+    X_train, y_train, X_test, y_test = transform_data(train, test, verbose=False)
 
     # real($) in t
-    test_original_prices = test.loc[X_test.index, 'Close'] # original test Close in $ in t time
+    test_original_prices = test.loc[X_test.index, 'Close']
 
     # real($) in t+1 [TARGET]
     raw_actual_usd = inverse_transform_predictions(y_test, test_original_prices)
@@ -32,6 +32,9 @@ if __name__ == '__main__':
     ]
 
     results = []
+    fetures_importances = []
+    feature_names = X_train.columns
+
 
     # 4. Running models
     for m in models:
@@ -43,6 +46,14 @@ if __name__ == '__main__':
         plot_prediction(actual_tomorrow_usd, preds, m.name, show=False)
         res = m.evaluate(actual_tomorrow_usd, preds)
         results.append(res)
+
+        # feature importance
+        if m.name != "Baseline (Naive)":
+            importance_df = pd.DataFrame({
+                'Feature': feature_names,
+                "Importance": m.model.feature_importances_
+            })
+            importance_df.to_csv(f"data/feature_importance/{m.name}.csv", index=False)
 
 
     # 5. Comparing results

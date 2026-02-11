@@ -109,6 +109,7 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         # Moving Averages
         X['MA_7'] = X['Close_log_return'].rolling(7).mean()
         X['MA_30'] = X['Close_log_return'].rolling(30).mean()
+
         
         # Volatility
         X['Volatility_7'] = X['Close_log_return'].rolling(window=7).std()

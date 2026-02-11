@@ -5,7 +5,8 @@ import pandas as pd
 from statsmodels.tsa.stattools import pacf
 from statsmodels.graphics.tsaplots import plot_pacf as sm_plot_pacf
 from statsmodels.tsa.seasonal import seasonal_decompose
-
+import os
+import pandas as pd
 
 def plot_close_price_by_time(df: pd.DataFrame, y='Close', title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):
     fig = plt.figure(figsize=(10, 6))
@@ -53,8 +54,8 @@ def plot_acf(df: pd.DataFrame, max_lags: int, pic_name: str, title: str = "Autoc
 
 
 def plot_pacf(df: pd.DataFrame, n_lags: int, pic_name: str, title: str = "PACF", show: bool=True):
-    fig = plt.figure(figsize=(10, 6))
-    sm_plot_pacf(df, lags=n_lags)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    sm_plot_pacf(df, lags=n_lags, color='royalblue', ax=ax)
     plt.title(title)
     plt.xlabel('Lags')
     plt.ylabel('PACF')
@@ -62,14 +63,15 @@ def plot_pacf(df: pd.DataFrame, n_lags: int, pic_name: str, title: str = "PACF",
     plt.savefig(f'plots/{pic_name}.png')
     if show:
         plt.show()
-    plt.close(fig)
+    else:
+        plt.close(fig)
 
 
 def plot_decomposition(df: pd.DataFrame, model: str='additive', period: int=365, show: bool=True):
     # additive in stationarized data
     result = seasonal_decompose(df['Close_log_return'], model=model, period=period)
     
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(12, 10), sharex=True)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(10, 6), sharex=True)
     
     fig.suptitle(f"Model Decomposition - Period {period}", fontsize=16)
     
@@ -83,3 +85,27 @@ def plot_decomposition(df: pd.DataFrame, model: str='additive', period: int=365,
     if show:
         plt.show()
     plt.close()
+
+
+def plot_feature_importance(show: bool=True):
+    path = 'data/feature_importance/'
+    if len(os.listdir(path)) == 0:
+        raise(FileNotFoundError)
+    else:
+        for file in os.listdir(path):
+            name = file.split('.')[0]
+            df = pd.read_csv(os.path.join(path, file), sep=',')
+            df = df.sort_values(by='Importance', ascending=False)
+            _, ax = plt.figure(figsize=(10, 6))
+            sns.barplot(data=df, x='Feature', y='Importance', color='royalblue', ax=ax)
+            plt.title(f'Feature Importance of model: {name}', pad=20)
+            plt.xlabel('Features')
+            plt.ylabel('Importance')
+            plt.xticks(rotation=30)
+            plt.tight_layout()
+            plt.grid(axis='y', linestyle='--', color='lightblue')
+            plt.savefig(f'plots/feature_importance_{name}.png', bbox_inches='tight')
+
+        if show:
+            plt.show()
+        plt.close()
