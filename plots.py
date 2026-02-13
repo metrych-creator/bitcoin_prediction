@@ -22,20 +22,37 @@ def plot_close_price_by_time(df: pd.DataFrame, y='Close', title: str ="BTC Close
     plt.close(fig)
 
 
-def plot_prediction(test: pd.DataFrame, y_pred: pd.Series, model_name: str, show: bool=True):
-    fig = plt.figure(figsize=(10, 6))
+def plot_prediction_with_residuals(actual: pd.Series, predicted: pd.Series, model_name: str, show: bool=True):
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 8), sharex=True, 
+                                   gridspec_kw={'height_ratios': [2, 1]})
+    
+    # prediction comparison plot
+    sns.lineplot(x=actual.index, y=actual, color='royalblue', alpha=0.7, label='Actual', ax=ax1)
+    sns.lineplot(x=actual.index, y=predicted, color='darkorange', alpha=1, linewidth=1, 
+                 label='Predicted', linestyle='--', ax=ax1)
+    
+    ax1.set_title(f"Price Prediction Comparison - model: {model_name}", fontsize=14)
+    ax1.set_ylabel("Price [USD]")
+    ax1.legend()
+    ax1.grid(True, alpha=0.2)
 
-    ax = sns.lineplot(x=test.index, y=test, color='royalblue', alpha=1, label = 'Actual')
-    sns.lineplot(x=test.index, y=y_pred, color='darkorange', alpha=1, linewidth=0.3, label='Predicted', linestyle='--')
+    # residuals plot
+    residuals = actual - predicted
+    ax2.plot(actual.index, residuals, color='crimson', label='Error (Actual - Pred)', alpha=0.8)
+    ax2.fill_between(actual.index, residuals, 0, color='crimson', alpha=0.1)
+    ax2.axhline(0, color='black', linestyle='--', alpha=0.6)
+    
+    ax2.set_title("Prediction Errors (Residuals)", fontsize=12)
+    ax2.set_ylabel("Error [USD]")
+    ax2.grid(True, alpha=0.2)
 
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m %Y'))
-
-    plt.title(f"Prediction price by time - model: {model_name}")
+    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+    ax2.xaxis.set_major_formatter(mdates.DateFormatter('%m %Y'))
     plt.xticks(rotation=45, ha='right')
-    plt.tight_layout() # Ensures labels aren't cut off
-    plt.legend()
-    plt.savefig(f'plots/prediction_{model_name}.png')
+
+    plt.tight_layout()
+    plt.savefig(f'plots/full_prediction_analysis_{model_name}.png', bbox_inches='tight')
+    
     if show:
         plt.show()
     plt.close(fig)
@@ -96,8 +113,8 @@ def plot_feature_importance(show: bool=True):
             name = file.split('.')[0]
             df = pd.read_csv(os.path.join(path, file), sep=',')
             df = df.sort_values(by='Importance', ascending=False)
-            _, ax = plt.figure(figsize=(10, 6))
-            sns.barplot(data=df, x='Feature', y='Importance', color='royalblue', ax=ax)
+            fig = plt.figure(figsize=(10, 6))
+            sns.barplot(data=df, x='Feature', y='Importance', color='royalblue')
             plt.title(f'Feature Importance of model: {name}', pad=20)
             plt.xlabel('Features')
             plt.ylabel('Importance')
@@ -108,4 +125,4 @@ def plot_feature_importance(show: bool=True):
 
         if show:
             plt.show()
-        plt.close()
+        plt.close(fig)
