@@ -1,6 +1,5 @@
 import pandas as pd
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifter
 from typing import Tuple, cast
 import numpy as np
@@ -14,7 +13,7 @@ def prepare_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     Data is split into train and test sets without shuffling to preserve temporal order.
     
     Args:
-        path: Path to the input CSV file
+        df: DataFrame with columns: 'Date', 'Close', 'High', 'Low', 'Open', 'Volume'
 
     Returns:
         A tuple containing the cleaned training and test DataFrames.
@@ -35,37 +34,56 @@ def prepare_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     return cast(pd.DataFrame, train_cleaned), cast(pd.DataFrame, test_cleaned)
 
 
-def transform_data(train: pd.DataFrame, test: pd.DataFrame, verbose: bool=True):
+def transform_data(train: pd.DataFrame, test: pd.DataFrame=None, pipeline: Pipeline=None, verbose: bool=True) -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series, Pipeline]:
+    """
+    Preprocess features for time series regression.
+    Applies technical feature engineering to create a target variable for next-day prediction: 
+        - log transformation, 
+        - differencing,
+        - time series shifting
+
+    Supports:
+    1. Training: Pass (train, test). Returns (X_train, y_train, X_test, y_test, pipeline).
+    2. Live Inference: Pass (train=live_data, pipeline=trained_pipe). Returns (X_live).
+    """
+
+    def extract_X_y(df):
+        """Helper to drop non-features and select numeric types."""
+        cols_to_drop = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'target_next_day']
+        X = df.drop(columns=[c for c in cols_to_drop if c in df.columns]).select_dtypes(include=[np.number])
+        y = df['target_next_day'] if 'target_next_day' in df.columns else None
+        return X, y
+
+
+    # --- LIVE INFERENCE MODE ---
+    if pipeline is not None:
+        # Use existing pipeline (already fitted)
+        live_full = pipeline.transform(train)
+        X_live, _ = extract_X_y(live_full.tail(1))
+        return _, _, X_live, _, _
+
+
+    # --- TRAINING MODE ---
     pipeline = Pipeline([
-        ('tech_features', TechnicalFeaturesAdder()), # RSI, Bollinger Prc
+        ('tech_features', TechnicalFeaturesAdder()),
         ('log', LogTransformer()),
         ('diff', DiffTransformer(degree=1, verbose=verbose)),
-        ('engineer', FeatureEngineer()), # MA, Lags, Vol
-        ('shifter', TimeSeriesShifter(target_col='Close_log_return'))
+        ('engineer', FeatureEngineer()),
+        ('shifter', TimeSeriesShifter(target_col='Close_log_return', shift=1, new_col_name='target_next_day'))
     ])
     
-    train_transformed = pipeline.fit_transform(train).dropna()
-
-    context_size = 365 # rows from train to remember 
-
-    # test data with needed context from train
-    test_with_context = pd.concat([train.tail(context_size), test])
-    test_transformed_full = pipeline.transform(test_with_context)
+    # 1. Fit and transform training data
+    train_full = pipeline.fit_transform(train)
+    X_train, y_train = extract_X_y(train_full.dropna())
     
-    # filter data from test
-    test_transformed = test_transformed_full.loc[test.index].dropna()
+    # 2. Training Mode
+    if test is not None:
+        context_size = 365
+        test_with_context = pd.concat([train.tail(context_size), test])
+        test_full = pipeline.transform(test_with_context)
+        X_test, y_test = extract_X_y(test_full.loc[test.index].dropna())
 
-    # test_transformed = pipeline.transform(test).dropna()
-
-    cols_to_drop = ['Open', 'High', 'Close', 'Low', 'Volume', 'target_next_day']
-
-    X_train = train_transformed.drop(columns=cols_to_drop)
-    y_train = train_transformed['target_next_day']
-    
-    X_test = test_transformed.drop(columns=cols_to_drop)
-    y_test = test_transformed['target_next_day']
-    
-    return X_train, y_train, X_test, y_test
+        return X_train, y_train, X_test, y_test, pipeline
 
 
 def inverse_transform_predictions(preds_log_diff: pd.Series, original_prices: pd.Series) -> pd.Series:

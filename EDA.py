@@ -1,14 +1,13 @@
 from plots import plot_close_price_by_time, plot_decomposition, plot_acf, plot_pacf, plot_feature_importance
 import pandas as pd
+from src.data_processor import prepare_data, transform_data
 
 
-def make_EDA(df):
     train, test = prepare_data(df)
 
     # Close
     plot_close_price_by_time(pd.concat([train, test]), show=False)
 
-    X_train, _, X_test, _ = transform_data(train, test, verbose=False)
 
     # Log Returns
     plot_close_price_by_time(pd.concat([X_train, X_test]), y='Close_log_return', title='BTC Log Returns', pic_name='log_returns', show=True)

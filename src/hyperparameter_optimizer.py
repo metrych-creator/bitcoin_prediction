@@ -66,10 +66,10 @@ def optimize_hyperparameters(model, model_name, X_train, y_train):
 
 def _save_hyperparameters(model_name, best_params):
     if OPTIMIZATION_SETTINGS['save_hyperparameters']:
-        if not os.path.exists('results'):
-            os.makedirs('results')
+        if not os.path.exists('models'):
+            os.makedirs('models')
         
-        params_file = f"results/{model_name}_best_params.json"
+        params_file = f"models/{model_name}_best_params.json"
         with open(params_file, 'w') as f:
             json.dump(best_params, f, indent=2)
         
@@ -78,8 +78,8 @@ def _save_hyperparameters(model_name, best_params):
 
 def _save_fitted_model(model_name, best_estimator):
     if OPTIMIZATION_SETTINGS['save_models']:
-        if not os.path.exists('results'):
-            os.makedirs('results')
+        if not os.path.exists('models'):
+            os.makedirs('models')
         
         model_file = f"models/{model_name}_best_model.pkl"
         joblib.dump(best_estimator, model_file)
@@ -88,7 +88,7 @@ def _save_fitted_model(model_name, best_estimator):
 
 
 def load_best_hyperparameters(model_name):
-    params_file = f"results/{model_name}_best_params.json"
+    params_file = f"models/{model_name}_best_params.json"
     if os.path.exists(params_file):
         with open(params_file, 'r') as f:
             return json.load(f)
@@ -96,7 +96,7 @@ def load_best_hyperparameters(model_name):
 
 
 def load_best_model(model_name):
-    model_file = f"results/{model_name}_best_model.pkl"
+    model_file = f"models/{model_name}_best_model.pkl"
     if os.path.exists(model_file):
         return joblib.load(model_file)
     return None

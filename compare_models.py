@@ -1,3 +1,4 @@
+import joblib
 from sklearn.linear_model import Ridge
 from src.data_processor import prepare_data, transform_data, inverse_transform_predictions
 from src.wrapper import ArimaWrapper, RegressionWrapper, ArimaxWrapper
@@ -12,7 +13,7 @@ import numpy as np
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn.metrics import mean_absolute_error
 from src.config import HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, MODEL_SETTINGS, OPTIMIZATION_SETTINGS
-from src.hyperparameter_optimizer import optimize_hyperparameters
+from src.hyperparameter_optimizer import load_best_model, optimize_hyperparameters
 import time
 
 
@@ -71,12 +72,12 @@ if __name__ == '__main__':
 
     # 2. Preprocessing and Feature Engineering
     train, test = prepare_data(df)
-    X_train, y_train, X_test, y_test = transform_data(train, test, verbose=False)
+    X_train, y_train, X_test, y_test, trained_pipe = transform_data(train, test, verbose=False)
 
     test_original_prices = test.loc[X_test.index, 'Close'] # real($) in t
 
     raw_actual_usd = inverse_transform_predictions(y_test, test_original_prices) # real($) in t+1 [TARGET]
-    actual_tomorrow_usd = pd.Series(raw_actual_usd, index=X_test.index)
+    actual_tomorrow_usd = pd.Series(raw_actual_usd, index=X_test.index) # real($) in t+1 [TARGET] with correct index for evaluation and plotting
 
     # 3. Models initialization
     baseline_model = NaiveBaseline()
@@ -148,3 +149,10 @@ if __name__ == '__main__':
     print("-"*18, " Model Comparison ", "-"*18)
     print(df_results)
     df_results.to_csv("results/model_comparison.csv", index=True)
+
+    # 8. Save best model for production
+    best_model_name = df_results.index[0]
+    best_model = load_best_model(best_model_name)
+    if best_model is not None:
+        joblib.dump(best_model, f"models/best_model.pkl")
+    joblib.dump(trained_pipe, 'models/feature_pipeline.pkl')

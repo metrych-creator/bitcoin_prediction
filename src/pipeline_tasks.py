@@ -66,7 +66,7 @@ class DiffTransformer(BaseEstimator, TransformerMixin):
         return self
 
     def _check_stationarity(self, series: pd.Series, col_name: str):
-        res = adfuller(series.dropna())
+        res = adfuller(series.dropna()) # ADF test for stationarity
         p_val = res[1]
         status = "STATIONARY" if p_val <= 0.05 else "NON-STATIONARY"
         print(f"[ADF Test] {col_name} | p-value: {p_val:.4f} -> {status}")
@@ -144,8 +144,10 @@ class TechnicalFeaturesAdder(BaseEstimator, TransformerMixin):
 
 class TimeSeriesShifter(BaseEstimator, TransformerMixin):
     """Compute real price in t+1 (tomorrow)."""
-    def __init__(self, target_col='Close_log_return'):
+    def __init__(self, target_col='Close_log_return', shift: int = 1, new_col_name='target_next_day'):
         self.target_col = target_col
+        self.shift = -shift
+        self.new_target_col = new_col_name
 
     def fit(self, X, y=None):
         self.is_fitted_ = True
@@ -153,5 +155,5 @@ class TimeSeriesShifter(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X = X.copy()
-        X['target_next_day'] = X[self.target_col].shift(-1)
+        X[self.new_target_col] = X[self.target_col].shift(self.shift)
         return X
