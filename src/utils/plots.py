@@ -126,3 +126,16 @@ def plot_feature_importance(show: bool=True):
         if show:
             plt.show()
         plt.close(fig)
+
+
+def plot_volatility(df: pd.DataFrame, show: bool=True):
+    fig = plt.figure(figsize=(10, 6))
+    plt.plot(df.index, df['Close_volatility'], color='royalblue', label='Volatility')
+    plt.title('Volatility Over Time')
+    plt.xlabel('Date')
+    plt.ylabel('Volatility')
+    plt.grid(True)
+    plt.savefig(f'plots/volatility.png')
+    if show:
+        plt.show()
+    plt.close(fig)

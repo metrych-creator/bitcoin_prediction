@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import time
 
-from src.data_processor import transform_data
+from .data_processor import transform_data
 
 def get_crypto_data(symbol="BTCUSDT", interval="1d", limit=500):
     """Downloads OHLCV data from Binance.US API for a given cryptocurrency symbol, time interval, and data limit."""
@@ -71,5 +71,3 @@ def run_production_inference(model_path: str, pipeline_path: str):
     
     return prediction[0]
 
-
-prediction = run_production_inference('models/best_model.pkl', 'models/feature_pipeline.pkl')

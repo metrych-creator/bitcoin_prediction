@@ -9,7 +9,7 @@ import joblib
 import warnings
 from sklearn.model_selection import GridSearchCV
 from sklearn.exceptions import ConvergenceWarning
-from src.config import HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, OPTIMIZATION_SETTINGS, MODEL_SETTINGS
+from .config import HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, OPTIMIZATION_SETTINGS, MODEL_SETTINGS
 
 # Suppress warnings during hyperparameter optimization
 warnings.filterwarnings('ignore', category=UserWarning)

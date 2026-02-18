@@ -5,7 +5,7 @@ from src.wrapper import ArimaWrapper, RegressionWrapper, ArimaxWrapper
 from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 from src.trainers.NaiveBaseline import NaiveBaseline
-from plots import plot_prediction_with_residuals
+from src.utils.plots import plot_prediction_with_residuals
 from sklearn.svm import SVR
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
