@@ -2,14 +2,14 @@
 Hyperparameter optimization module for model comparison.
 Provides functions to optimize hyperparameters using GridSearchCV with time series cross-validation.
 """
-
+import pandas as pd
 import json
 import os
 import joblib
 import warnings
 from sklearn.model_selection import GridSearchCV
 from sklearn.exceptions import ConvergenceWarning
-from .config import HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, OPTIMIZATION_SETTINGS, MODEL_SETTINGS
+from .config import COLUMN_TO_PREDICT, HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, OPTIMIZATION_SETTINGS, MODEL_SETTINGS
 
 # Suppress warnings during hyperparameter optimization
 warnings.filterwarnings('ignore', category=UserWarning)
@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=ConvergenceWarning)
 
 
-def optimize_hyperparameters(model, model_name, X_train, y_train):
+def optimize_hyperparameters(model, model_name: str, X_train: pd.DataFrame, y_train: pd.Series):
     """
     Optimize hyperparameters for a given model using GridSearchCV.
     
@@ -28,7 +28,7 @@ def optimize_hyperparameters(model, model_name, X_train, y_train):
         y_train: Training target
     
     Returns:
-        tuple: (optimized_model, best_params)
+        optimized_model
     """
     if model_name in HYPERPARAMETER_GRIDS:
         print(f"Optimizing hyperparameters for {model_name}...")
@@ -69,7 +69,11 @@ def _save_hyperparameters(model_name, best_params):
         if not os.path.exists('models'):
             os.makedirs('models')
         
-        params_file = f"models/{model_name}_best_params.json"
+        params_folder = os.path.join("models", COLUMN_TO_PREDICT, "hyperparameters")
+        if not os.path.exists(params_folder):
+            os.makedirs(params_folder)
+
+        params_file = f"{params_folder}/{model_name}_best_params.json"
         with open(params_file, 'w') as f:
             json.dump(best_params, f, indent=2)
         
@@ -78,10 +82,12 @@ def _save_hyperparameters(model_name, best_params):
 
 def _save_fitted_model(model_name, best_estimator):
     if OPTIMIZATION_SETTINGS['save_models']:
-        if not os.path.exists('models'):
-            os.makedirs('models')
+        model_folder = os.path.join("models", COLUMN_TO_PREDICT)
+
+        if not os.path.exists(model_folder):
+            os.makedirs(model_folder)
         
-        model_file = f"models/{model_name}_best_model.pkl"
+        model_file = f"{model_folder}/{model_name}.pkl"
         joblib.dump(best_estimator, model_file)
         
         print(f"Saved fitted model to: {model_file}")
@@ -96,7 +102,7 @@ def load_best_hyperparameters(model_name):
 
 
 def load_best_model(model_name):
-    model_file = f"models/{model_name}_best_model.pkl"
+    model_file = f"models/{COLUMN_TO_PREDICT}/{model_name}.pkl"
     if os.path.exists(model_file):
         return joblib.load(model_file)
     return None

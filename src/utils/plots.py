@@ -4,13 +4,10 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 import matplotlib.dates as mdates
 import pandas as pd
-from statsmodels.tsa.stattools import pacf
 from statsmodels.graphics.tsaplots import plot_pacf as sm_plot_pacf
 from statsmodels.tsa.seasonal import seasonal_decompose
 import os
 from src.config import COLUMN_TO_PREDICT
-from src.data_processor import prepare_data, transform_data
-from src.forecast_btc import count_days_since_last_candle, get_crypto_data
 
 def plot_close_price_by_time(df: pd.DataFrame, y='Close', title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):
     fig = plt.figure(figsize=(10, 6))

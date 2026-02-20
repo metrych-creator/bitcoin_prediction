@@ -169,5 +169,5 @@ if __name__ == '__main__':
     best_model_name = df_results.index[0]
     best_model = load_best_model(best_model_name)
     if best_model is not None:
-        joblib.dump(best_model, f"models/best_model_{COLUMN_TO_PREDICT}.pkl")
-    joblib.dump(trained_pipe, f'models/feature_pipeline_{COLUMN_TO_PREDICT}.pkl')
+        joblib.dump(best_model, f"models/{COLUMN_TO_PREDICT}/best_model.pkl")
+    joblib.dump(trained_pipe, f'models/{COLUMN_TO_PREDICT}/feature_pipeline.pkl')

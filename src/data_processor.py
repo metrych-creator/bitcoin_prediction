@@ -1,10 +1,10 @@
 import pandas as pd
 from sklearn.pipeline import Pipeline
-from .pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifter
+from pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifter
 from typing import Tuple, cast
 import numpy as np
 from sklearn.model_selection import train_test_split
-from src.config import COLUMN_TO_PREDICT
+from config import COLUMN_TO_PREDICT
 
 def prepare_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
