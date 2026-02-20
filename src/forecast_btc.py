@@ -3,8 +3,23 @@ import requests
 import pandas as pd
 import numpy as np
 import time
-
 from .data_processor import transform_data
+# Add the project root to Python path
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+def count_days_since_last_candle(df=None):
+    """Counts days since last candle till today."""
+    if df is None:
+        df = pd.read_csv('data/Bitcoin_history_data.csv')
+    last_date_raw = df['Date'].iloc[-1]
+    last_date = pd.to_datetime(last_date_raw)
+    current_date = pd.Timestamp.now()
+    days_since_last_candle = (current_date - last_date).days
+    return days_since_last_candle
+
 
 def get_crypto_data(symbol="BTCUSDT", interval="1d", limit=500):
     """Downloads OHLCV data from Binance.US API for a given cryptocurrency symbol, time interval, and data limit."""
@@ -12,7 +27,7 @@ def get_crypto_data(symbol="BTCUSDT", interval="1d", limit=500):
     params = {
         "symbol": symbol,
         "interval": interval,
-        "limit": limit
+        "limit": limit+1
     }
     
     response = requests.get(base_url, params=params)
@@ -46,7 +61,8 @@ def run_production_inference(model_path: str, pipeline_path: str):
     pipeline = joblib.load(pipeline_path)
 
     # 2. Get latest data
-    df_live = get_crypto_data(symbol="BTCUSDT", interval="1d", limit=500)
+    days_to_get = count_days_since_last_candle()
+    df_live = get_crypto_data(symbol="BTCUSDT", interval="1d", limit=days_to_get)
     if df_live is None or df_live.empty:
         print("Error: Failed to retrieve data from the API.")
         return None

@@ -83,3 +83,6 @@ MODEL_SETTINGS = {
         'subsample': 0.7
     }
 }
+
+COLUMN_TO_PREDICT = 'Close_log_return'
+# COLUMN_TO_PREDICT = 'Volatility_7'

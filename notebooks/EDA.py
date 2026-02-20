@@ -1,12 +1,11 @@
+# Add the project root to Python path
 import sys
 from pathlib import Path
-
-# Add the project root to Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import pandas as pd
-from src.utils.plots import plot_close_price_by_time, plot_decomposition, plot_acf, plot_pacf, plot_feature_importance
+from src.utils.plots import plot_close_price_by_time, plot_decomposition, plot_acf, plot_pacf, plot_feature_importance, plot_volatility_over_time
 from src.data_processor import prepare_data, transform_data
 
 
@@ -30,7 +29,10 @@ def make_EDA(df, show: bool = True):
     plot_decomposition(X_train, period=365, show=show)
 
     # feature importance
-    plot_feature_importance(show=True)
+    plot_feature_importance(show=show)
+
+    plot_volatility_over_time(df=pd.concat([X_train, X_test]), show=show)
+
 
 
 df = pd.read_csv('data/Bitcoin_history_data.csv')

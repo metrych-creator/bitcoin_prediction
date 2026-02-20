@@ -1,3 +1,9 @@
+# Add the project root to Python path
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 import joblib
 from sklearn.linear_model import Ridge
 from src.data_processor import prepare_data, transform_data, inverse_transform_predictions
@@ -12,10 +18,9 @@ from lightgbm import LGBMRegressor
 import numpy as np
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn.metrics import mean_absolute_error
-from src.config import HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, MODEL_SETTINGS, OPTIMIZATION_SETTINGS
+from src.config import HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, MODEL_SETTINGS, OPTIMIZATION_SETTINGS, COLUMN_TO_PREDICT
 from src.hyperparameter_optimizer import load_best_model, optimize_hyperparameters
 import time
-
 
 def save_feature_importance(model, model_name, feature_names):
     importance_df = None
@@ -61,9 +66,9 @@ def save_feature_importance(model, model_name, feature_names):
 
 
     if importance_df is not None and not importance_df.empty:
-        importance_df.to_csv(f"data/feature_importance/{m.name}.csv", index=False)
-
-
+        folder_path = Path(f"data/feature_importance/{COLUMN_TO_PREDICT}")
+        folder_path.mkdir(parents=True, exist_ok=True)
+        importance_df.to_csv(f"{folder_path}/{m.name}.csv", index=False)
 
 
 if __name__ == '__main__':
@@ -74,10 +79,15 @@ if __name__ == '__main__':
     train, test = prepare_data(df)
     X_train, y_train, X_test, y_test, trained_pipe = transform_data(train, test, verbose=False)
 
-    test_original_prices = test.loc[X_test.index, 'Close'] # real($) in t
 
-    raw_actual_usd = inverse_transform_predictions(y_test, test_original_prices) # real($) in t+1 [TARGET]
-    actual_tomorrow_usd = pd.Series(raw_actual_usd, index=X_test.index) # real($) in t+1 [TARGET] with correct index for evaluation and plotting
+    if COLUMN_TO_PREDICT == 'Close_log_return':
+        test_close = test.loc[X_test.index, 'Close'] # Close ($) in t
+        target_lst = inverse_transform_predictions(y_test, test_close) # Close($) in t+1 [TARGET]
+        target = pd.Series(target_lst, index=X_test.index) 
+    if COLUMN_TO_PREDICT == 'Volatility_7':
+        test_volatility = X_test['Volatility_7'] # Volatility_7 in t
+        target = y_test # [TARGET] t+1
+
 
     # 3. Models initialization
     baseline_model = NaiveBaseline()
@@ -129,13 +139,18 @@ if __name__ == '__main__':
         
         # 5. Make predictions with the best model
         raw_preds = m.predict(X_test)
-        preds = inverse_transform_predictions(
-            raw_preds, 
-            test_original_prices)
 
-        plot_prediction_with_residuals(actual_tomorrow_usd, preds, m.name, show=False)
+        if COLUMN_TO_PREDICT == 'Close_log_return':
+            preds = inverse_transform_predictions(
+                raw_preds, 
+                test_close)
+        else:
+            preds = raw_preds.values if hasattr(raw_preds, 'values') else raw_preds
 
-        res = m.evaluate(actual_tomorrow_usd, preds)
+        
+        plot_prediction_with_residuals(target, preds, m.name, show=False)
+
+        res = m.evaluate(target, preds)
         res['Training Time'] = training_time
         results.append(res)
 
@@ -148,11 +163,11 @@ if __name__ == '__main__':
     df_results = df_results.sort_values(by="MAE", ascending=True).set_index('model_name').rename_axis('Model Name')
     print("-"*18, " Model Comparison ", "-"*18)
     print(df_results)
-    df_results.to_csv("results/model_comparison.csv", index=True)
+    df_results.to_csv(f"results/model_comparison_{COLUMN_TO_PREDICT}.csv", index=True)
 
     # 8. Save best model for production
     best_model_name = df_results.index[0]
     best_model = load_best_model(best_model_name)
     if best_model is not None:
-        joblib.dump(best_model, f"models/best_model.pkl")
-    joblib.dump(trained_pipe, 'models/feature_pipeline.pkl')
+        joblib.dump(best_model, f"models/best_model_{COLUMN_TO_PREDICT}.pkl")
+    joblib.dump(trained_pipe, f'models/feature_pipeline_{COLUMN_TO_PREDICT}.pkl')

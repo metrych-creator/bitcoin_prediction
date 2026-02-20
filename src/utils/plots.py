@@ -1,4 +1,6 @@
-import matplotlib.pyplot as plt
+from pathlib import Path
+import joblib
+from matplotlib import pyplot as plt
 import seaborn as sns
 import matplotlib.dates as mdates
 import pandas as pd
@@ -6,7 +8,9 @@ from statsmodels.tsa.stattools import pacf
 from statsmodels.graphics.tsaplots import plot_pacf as sm_plot_pacf
 from statsmodels.tsa.seasonal import seasonal_decompose
 import os
-import pandas as pd
+from src.config import COLUMN_TO_PREDICT
+from src.data_processor import prepare_data, transform_data
+from src.forecast_btc import count_days_since_last_candle, get_crypto_data
 
 def plot_close_price_by_time(df: pd.DataFrame, y='Close', title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):
     fig = plt.figure(figsize=(10, 6))
@@ -49,9 +53,11 @@ def plot_prediction_with_residuals(actual: pd.Series, predicted: pd.Series, mode
     ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
     ax2.xaxis.set_major_formatter(mdates.DateFormatter('%m %Y'))
     plt.xticks(rotation=45, ha='right')
-
     plt.tight_layout()
-    plt.savefig(f'plots/full_prediction_analysis_{model_name}.png', bbox_inches='tight')
+
+    folder_path = Path("plots/full_predictions/") / COLUMN_TO_PREDICT
+    folder_path.mkdir(parents=True, exist_ok=True)
+    plt.savefig(folder_path / f'{model_name}.png', bbox_inches='tight')
     
     if show:
         plt.show()
@@ -105,32 +111,39 @@ def plot_decomposition(df: pd.DataFrame, model: str='additive', period: int=365,
 
 
 def plot_feature_importance(show: bool=True):
-    path = 'data/feature_importance/'
-    if len(os.listdir(path)) == 0:
-        raise(FileNotFoundError)
-    else:
-        for file in os.listdir(path):
-            name = file.split('.')[0]
-            df = pd.read_csv(os.path.join(path, file), sep=',')
-            df = df.sort_values(by='Importance', ascending=False)
-            fig = plt.figure(figsize=(10, 6))
-            sns.barplot(data=df, x='Feature', y='Importance', color='royalblue')
-            plt.title(f'Feature Importance of model: {name}', pad=20)
-            plt.xlabel('Features')
-            plt.ylabel('Importance')
-            plt.xticks(rotation=30)
-            plt.tight_layout()
-            plt.grid(axis='y', linestyle='--', color='lightblue')
-            plt.savefig(f'plots/feature_importance_{name}.png', bbox_inches='tight')
+    folder_path = 'data/feature_importance/'
 
-        if show:
-            plt.show()
-        plt.close(fig)
+    for col in os.listdir(folder_path):
+        my_path = os.path.join(folder_path, col)
+
+        if len(os.listdir(my_path)) == 0:
+            raise(FileNotFoundError)
+        else:
+            for file in os.listdir(my_path):
+                name = file.split('.')[0]
+                df = pd.read_csv(os.path.join(my_path, file), sep=',')
+                df = df.sort_values(by='Importance', ascending=False)
+                fig = plt.figure(figsize=(10, 6))
+                sns.barplot(data=df, x='Feature', y='Importance', color='royalblue')
+                plt.title(f'Feature Importance of model: {name}', pad=20)
+                plt.xlabel('Features')
+                plt.ylabel('Importance')
+                plt.xticks(rotation=30)
+                plt.tight_layout()
+                plt.grid(axis='y', linestyle='--', color='lightblue')
+
+                plot_path = Path("plots/feature_importance/") / col
+                plot_path.mkdir(parents=True, exist_ok=True)
+                plt.savefig(f'{plot_path}/{name}.png', bbox_inches='tight')
+
+                if show:
+                    plt.show()
+                plt.close(fig)
 
 
-def plot_volatility(df: pd.DataFrame, show: bool=True):
+def plot_volatility_over_time(df: pd.DataFrame, show: bool=True):
     fig = plt.figure(figsize=(10, 6))
-    plt.plot(df.index, df['Close_volatility'], color='royalblue', label='Volatility')
+    plt.plot(df.index, df['Volatility_7'], color='royalblue', label='Volatility')
     plt.title('Volatility Over Time')
     plt.xlabel('Date')
     plt.ylabel('Volatility')

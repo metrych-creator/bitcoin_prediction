@@ -4,7 +4,7 @@ from .pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdd
 from typing import Tuple, cast
 import numpy as np
 from sklearn.model_selection import train_test_split
-
+from src.config import COLUMN_TO_PREDICT
 
 def prepare_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -45,6 +45,20 @@ def transform_data(train: pd.DataFrame, test: pd.DataFrame=None, pipeline: Pipel
     Supports:
     1. Training: Pass (train, test). Returns (X_train, y_train, X_test, y_test, pipeline).
     2. Live Inference: Pass (train=live_data, pipeline=trained_pipe). Returns (X_live).
+
+    Returned columns:
+    - RSI
+    - BB_Percent
+    - Open_log_return
+    - High_log_return	
+    - Low_log_return	
+    - Close_log_return
+    - Volume_log_return
+    - MA_7
+    - MA_30
+    - MA_365
+    - Volatility_7
+    - Lag6
     """
 
     def extract_X_y(df):
@@ -65,11 +79,11 @@ def transform_data(train: pd.DataFrame, test: pd.DataFrame=None, pipeline: Pipel
 
     # --- TRAINING MODE ---
     pipeline = Pipeline([
-        ('tech_features', TechnicalFeaturesAdder()),
+        ('tech_features', TechnicalFeaturesAdder()), # RSI, BB_Percent
         ('log', LogTransformer()),
         ('diff', DiffTransformer(degree=1, verbose=verbose)),
-        ('engineer', FeatureEngineer()),
-        ('shifter', TimeSeriesShifter(target_col='Close_log_return', shift=1, new_col_name='target_next_day'))
+        ('engineer', FeatureEngineer()), # MA_7, MA_30, MA_365, Volatility_7
+        ('shifter', TimeSeriesShifter(target_col=COLUMN_TO_PREDICT, shift=1, new_col_name='target_next_day'))
     ])
     
     # 1. Fit and transform training data
@@ -91,6 +105,9 @@ def inverse_transform_predictions(preds_log_diff: pd.Series, original_prices: pd
     Converts forecasts from log-diff format back to dollars (USD).
     """
 
+    if COLUMN_TO_PREDICT not in ['Close_log_return']:
+        return preds_log_diff
+    
     preds = np.array(preds_log_diff).flatten()
     prices = np.array(original_prices).flatten()
 
