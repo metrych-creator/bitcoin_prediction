@@ -86,3 +86,7 @@ MODEL_SETTINGS = {
 
 COLUMN_TO_PREDICT = 'Close_log_return'
 # COLUMN_TO_PREDICT = 'Volatility_7'
+
+HORIZON = 7
+WINDOW = 30
+BATCH_SIZE = 32

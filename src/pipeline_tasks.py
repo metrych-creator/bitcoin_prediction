@@ -2,8 +2,13 @@ from sklearn.base import BaseEstimator, TransformerMixin
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.stattools import adfuller
+from torch import nn
+from src.config import HORIZON, WINDOW
+from src.utils.tools import add_bollinger_bands_prc, add_rsi
+import torch
+from torch.utils.data import Dataset, DataLoader
+from sklearn.preprocessing import MinMaxScaler
 
-from utils.tools import add_bollinger_bands_prc, add_rsi
 
 class DateFormatter(BaseEstimator, TransformerMixin):
     def __init__(self, column_name):
@@ -144,10 +149,9 @@ class TechnicalFeaturesAdder(BaseEstimator, TransformerMixin):
 
 class TimeSeriesShifter(BaseEstimator, TransformerMixin):
     """Compute real price in t+1 (tomorrow)."""
-    def __init__(self, target_col='Close_log_return', shift: int = 1, new_col_name='target_next_day'):
+    def __init__(self, target_col='Close_log_return', horizon: int=1):
         self.target_col = target_col
-        self.shift = -shift
-        self.new_target_col = new_col_name
+        self.horizon = horizon
 
     def fit(self, X, y=None):
         self.is_fitted_ = True
@@ -155,5 +159,68 @@ class TimeSeriesShifter(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X = X.copy()
-        X[self.new_target_col] = X[self.target_col].shift(self.shift)
+        for i in range(1, self.horizon + 1):
+            X[f'target_t+{i}'] = X[self.target_col].shift(-i)
         return X
+    
+
+class SlidingWindowDataset(Dataset):
+    def __init__(self, data, training_window_size: int=WINDOW, horizon_size: int=HORIZON, feature_cols: list=None):
+        self.scaler = MinMaxScaler()
+
+        self.training_window_size = training_window_size
+        self.horizon_size = horizon_size
+
+        # target columns (e.g. target_t+1, target_t+2...)
+        target_cols = [f'target_t+{i}' for i in range(1, self.horizon_size + 1)]
+
+        # feature columns (exclude target and raw price columns)
+        if feature_cols:
+            X_raw = data[feature_cols].values
+        else:
+            X_raw = data.drop(columns=target_cols).values
+            
+        # split target columns and features
+        y_raw = data[target_cols].values
+        
+        self.scaler_x = MinMaxScaler()
+        self.scaler_y = MinMaxScaler()
+
+        self.X = self.scaler_x.fit_transform(X_raw)
+        self.y = self.scaler_y.fit_transform(y_raw)
+        
+        # Add input_dim attribute for compatibility with refactored code
+        self.input_dim = X_raw.shape[1] if len(X_raw.shape) > 1 else 1
+
+    def __len__(self):
+        return len(self.X) - self.training_window_size
+
+    def __getitem__(self, idx):
+        # x - window size of days, y - next day
+        x = self.X[idx : idx + self.training_window_size]
+        y = self.y [idx + self.training_window_size - 1]
+        return torch.FloatTensor(x), torch.FloatTensor(y)
+    
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, max_len=5000):
+        """
+            Positional encoding for transformer models. Adds information about the position of each element in the sequence.
+        Args:
+            d_model: The dimension of the model (embedding size).
+            max_len: The maximum sequence length (how many days/time steps back).
+        """
+        super().__init__()
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-np.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        # x shape: [batch_size, seq_len, d_model]
+        x = x + self.pe[:x.size(1), :]
+        return x
+    
+

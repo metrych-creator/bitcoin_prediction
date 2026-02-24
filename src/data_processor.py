@@ -1,10 +1,12 @@
 import pandas as pd
 from sklearn.pipeline import Pipeline
-from pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifter
+from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifter
 from typing import Tuple, cast
 import numpy as np
 from sklearn.model_selection import train_test_split
-from config import COLUMN_TO_PREDICT
+from src.config import COLUMN_TO_PREDICT
+import yfinance as yf
+
 
 def prepare_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -112,3 +114,31 @@ def inverse_transform_predictions(preds_log_diff: pd.Series, original_prices: pd
     prices = np.array(original_prices).flatten()
 
     return np.exp(np.log(prices) + preds)
+
+
+def count_days_since_last_candle(df=pd.DataFrame) -> int:
+    """Counts days since last candle in df till today."""
+    last_date_raw = df['Date'].iloc[-1]
+    last_date = pd.to_datetime(last_date_raw)
+    current_date = pd.Timestamp.now()
+    days_since_last_candle = (current_date - last_date).days
+    return days_since_last_candle
+
+
+def get_crypto_data_yahoo(symbol="BTC-USD", interval="1d", limit=500):
+    """Downloads OHLCV data from Yahoo Finance API for a given cryptocurrency symbol, time interval, and data limit."""
+    limit += 1
+    df = yf.download(symbol, period=f"{limit}d", interval=interval)
+    df = df.reset_index()
+
+    # Handle MultiIndex columns if present
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
+    df = df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+
+    df['Date'] = pd.to_datetime(df['Date'], unit='ms')
+    numeric_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+    df[numeric_cols] = df[numeric_cols].astype(float)
+
+    return df
