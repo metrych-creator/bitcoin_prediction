@@ -210,3 +210,7 @@ __marimo__/
 # Temporary files during development
 plots/
 models/
+data/
+results/
+requirements.txt
+README.md

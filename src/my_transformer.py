@@ -25,8 +25,6 @@ from src.transformer_architecture import transformer_pipeline
 device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
 
 
-
-
 def run_production_inference(if_train: bool=False, model_path: str=None, pipeline_path: str=None, epochs: int=5, lr: float=0.0001):
     full_df, processed_df_raw = prepare_joined_data()
     predictor = BitcoinPredictor(input_dim=17+HORIZON, horizon=HORIZON) # input 17 engineered features + horizon target columns????
@@ -111,4 +109,4 @@ def run_production_inference(if_train: bool=False, model_path: str=None, pipelin
 
     return pred_log_returns
 
-run_production_inference(if_train=False, model_path=f'models/transformer/{COLUMN_TO_PREDICT}/model.pkl', pipeline_path=f'models/transformer/{COLUMN_TO_PREDICT}/feature_pipeline.pkl', epochs=5, lr=0.0001)
+# run_production_inference(if_train=False, model_path=f'models/transformer/{COLUMN_TO_PREDICT}/model.pkl', pipeline_path=f'models/transformer/{COLUMN_TO_PREDICT}/feature_pipeline.pkl', epochs=5, lr=0.0001)

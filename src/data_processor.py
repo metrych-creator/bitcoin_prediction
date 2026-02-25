@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.pipeline import Pipeline
-from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifter
+from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifterLegacy
 from typing import Tuple, cast
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -85,7 +85,7 @@ def transform_data(train: pd.DataFrame, test: pd.DataFrame=None, pipeline: Pipel
         ('log', LogTransformer()),
         ('diff', DiffTransformer(degree=1, verbose=verbose)),
         ('engineer', FeatureEngineer()), # MA_7, MA_30, MA_365, Volatility_7
-        ('shifter', TimeSeriesShifter(target_col=COLUMN_TO_PREDICT, shift=1, new_col_name='target_next_day'))
+        ('shifter', TimeSeriesShifterLegacy(target_col=COLUMN_TO_PREDICT, shift=1))
     ])
     
     # 1. Fit and transform training data

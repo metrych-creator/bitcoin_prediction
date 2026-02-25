@@ -20,7 +20,8 @@ def run_production_inference(model_path: str, pipeline_path: str):
     pipeline = joblib.load(pipeline_path)
 
     # 2. Get latest data
-    days_to_get = count_days_since_last_candle()
+    df = pd.read_csv('data/Bitcoin_history_data.csv')
+    days_to_get = count_days_since_last_candle(df)
     df_live = get_crypto_data_yahoo(interval="1d", limit=days_to_get)
     if df_live is None or df_live.empty:
         print("Error: Failed to retrieve data from the API.")
@@ -40,14 +41,19 @@ def run_production_inference(model_path: str, pipeline_path: str):
 
     print (X_live.head())
     # 5. Make prediction
-    prediction = model.predict(X_live)
+    prediction_raw = model.predict(X_live)
+
+    if COLUMN_TO_PREDICT in ['Close_log_return']:
+        # Cena_dzisiaj = Cena_wczoraj * exp(log_return)
+        last_actual_price = df_live['Close'].iloc[-1]
+        prediction = last_actual_price * np.exp(prediction_raw)
 
     # 6. Result
     current_date = df_live['Date'].iloc[-1]
     print("-" * 30)
     print(f"PREDICTION RAPORT FOR: BTC-USD")
-    print(f"Date of last candle: {current_date}")
-    print(f"Predicted volatility for tomorrow: {prediction[0]:.4f}")
+    print(f"Date of last candle: {current_date.date()}")
+    print(f"Predicted {COLUMN_TO_PREDICT} for tomorrow: {prediction[0]:.2f}", "$" if COLUMN_TO_PREDICT == 'Close_log_return' else "%")
     print("-" * 30)
     
     return prediction[0]

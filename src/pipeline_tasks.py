@@ -162,6 +162,22 @@ class TimeSeriesShifter(BaseEstimator, TransformerMixin):
         for i in range(1, self.horizon + 1):
             X[f'target_t+{i}'] = X[self.target_col].shift(-i)
         return X
+
+
+class TimeSeriesShifterLegacy(BaseEstimator, TransformerMixin):
+    """Legacy TimeSeriesShifter for backward compatibility with shift parameter."""
+    def __init__(self, target_col='Close_log_return', shift: int=1):
+        self.target_col = target_col
+        self.shift = shift
+
+    def fit(self, X, y=None):
+        self.is_fitted_ = True
+        return self
+
+    def transform(self, X):
+        X = X.copy()
+        X['target_next_day'] = X[self.target_col].shift(-self.shift)
+        return X
     
 
 class SlidingWindowDataset(Dataset):
