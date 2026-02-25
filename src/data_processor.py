@@ -1,3 +1,4 @@
+from turtle import st
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifterLegacy
@@ -142,3 +143,16 @@ def get_crypto_data_yahoo(symbol="BTC-USD", interval="1d", limit=500):
     df[numeric_cols] = df[numeric_cols].astype(float)
 
     return df
+
+def get_current_price() -> float:
+    df = get_crypto_data_yahoo(interval="1d", limit=1)
+    if df is None or df.empty:
+        st.error("Error: Failed to retrieve current data from the API.")
+        return None
+    return df['Close'].iloc[-1]
+
+def get_last_prices(window_size: int):
+    df = get_crypto_data_yahoo(interval="1d", limit=window_size)
+    print(df.head())
+    print(df.tail())
+    return df['Close'].tolist()

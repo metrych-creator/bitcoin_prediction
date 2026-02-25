@@ -42,20 +42,7 @@ class BitcoinTransformer(nn.Module):
         # Take the output of the last time step only (Many-to-One)
         return self.decoder(x[:, -1, :])
 
-
-class BitcoinPredictor(nn.Module):
-    def __init__(self, input_dim, horizon):
-        super(BitcoinPredictor, self).__init__()
-        input_dim = input_dim + horizon
-        self.transformer = BitcoinTransformer(input_dim=input_dim, horizon=horizon)
-
-    def forward(self, x):
-        return self.transformer(x)
     
-    def train(self, mode = True):
-        return super().train(mode)
-    
-
 transformer_pipeline = Pipeline([
         # ('date_formatter', DateFormatter(column_name='Date')),
         ('imputer', TimeSeriesImputer(freq='D')), # Fill missing dates

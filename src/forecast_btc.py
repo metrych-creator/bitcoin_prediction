@@ -14,7 +14,7 @@ import src.pipeline_tasks as pipeline_tasks
 sys.modules['pipeline_tasks'] = pipeline_tasks
 
 
-def run_production_inference(model_path: str, pipeline_path: str):
+def run_traditional_ml_inference(model_path: str, pipeline_path: str):
     # 1. Load model and pipeline
     model = joblib.load(model_path)
     pipeline = joblib.load(pipeline_path)
