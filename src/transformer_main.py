@@ -83,8 +83,8 @@ def predict_with_model(model, processed_df_raw, target_cols, feature_cols, ds):
     return pred_log_returns
 
 
-def run_transformer_inference(if_train: bool=False, model_path: str=f'models/transformer/{COLUMN_TO_PREDICT}/model.pkl', pipeline_path: str=f'models/transformer/{COLUMN_TO_PREDICT}/feature_pipeline.pkl', epochs: int=5, lr: float=0.0001):
     """Main function to run production inference or training."""
+    # Get dynamic configuration
     full_df, processed_df_raw = prepare_joined_data()
     train_df = processed_df_raw.dropna()
 

@@ -1,6 +1,5 @@
 """
 Data processing module for Transformer model.
-Extracts data preparation logic from my_transformer.py to separate concerns.
 """
 
 import pandas as pd
