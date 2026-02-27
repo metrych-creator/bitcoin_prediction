@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import plotly.graph_objects as go
 from src.data_processor import get_last_prices
 
-def plot_predicted_prices(predicted_prices: list, window_size: int=30):
+def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_size: int=7):
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     # historical
@@ -18,7 +18,8 @@ def plot_predicted_prices(predicted_prices: list, window_size: int=30):
     dates_hist = pd.date_range(end=today, periods=len(prices_hist)).tolist()
 
     # predictions
-    dates_preds = pd.date_range(start=today+timedelta(days=1), periods=len(predicted_prices)).to_list()
+    dates_preds = pd.date_range(start=today+timedelta(days=1), periods=horizon_size).tolist()
+    predicted_prices = predicted_prices[:horizon_size]  # take as many predictions as the horizon size
     fig = go.Figure()
 
     # historical
@@ -76,7 +77,7 @@ def plot_predicted_prices(predicted_prices: list, window_size: int=30):
 def plot_predicted_percentage_prices(predicted_prices, horizon_size=7):
     start_date = datetime.now() + timedelta(days=1)
     dates = pd.date_range(start=start_date, periods=horizon_size).tolist()
-
+    predicted_prices = predicted_prices[:horizon_size]  # take as many predictions as the horizon size
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(

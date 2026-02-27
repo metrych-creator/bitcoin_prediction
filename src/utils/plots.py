@@ -8,6 +8,7 @@ from statsmodels.graphics.tsaplots import plot_pacf as sm_plot_pacf
 from statsmodels.tsa.seasonal import seasonal_decompose
 import os
 from src.config import COLUMN_TO_PREDICT, HORIZON
+from src.config_manager import get_config
 
 def plot_close_price_by_time(df: pd.DataFrame, y='Close', title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):
     fig = plt.figure(figsize=(10, 6))
@@ -152,12 +153,17 @@ def plot_volatility_over_time(df: pd.DataFrame, show: bool=True):
 
 
 def plot_price_forecast(last_price: pd.Series, predicted_prices: pd.Series) -> None:
+    # Get dynamic configuration
+    config = get_config()
+    horizon_size = config.get_horizon_size()
+    column_to_predict = config.get_column_to_predict()
+    
     plt.figure(figsize=(10, 5))
-    plt.plot(range(1, HORIZON + 1), predicted_prices, marker='o', linestyle='-', color='blue', label='Forecasted Price')
+    plt.plot(range(1, horizon_size + 1), predicted_prices, marker='o', linestyle='-', color='blue', label='Forecasted Price')
     plt.axhline(y=last_price, color='red', linestyle='--', label='Last Known Price')
-    plt.title(f"Bitcoin Forecast: Next {HORIZON} Days")
+    plt.title(f"Bitcoin Forecast: Next {horizon_size} Days")
     plt.xlabel("Days into Future")
-    y_label = "Price (USD)" if COLUMN_TO_PREDICT == 'Close_log_return' else "Volatility (%)"
+    y_label = "Price (USD)" if column_to_predict == 'Close_log_return' else "Volatility (%)"
     plt.ylabel(y_label)
     plt.grid(True, alpha=0.3)
     plt.legend()

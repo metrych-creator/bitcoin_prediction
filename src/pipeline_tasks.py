@@ -159,8 +159,16 @@ class TimeSeriesShifter(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         X = X.copy()
+        
+        # Create all target columns at once to avoid fragmentation
+        target_data = {}
         for i in range(1, self.horizon + 1):
-            X[f'target_t+{i}'] = X[self.target_col].shift(-i)
+            target_data[f'target_t+{i}'] = X[self.target_col].shift(-i)
+        
+        # Add all target columns at once using pd.concat for better performance
+        target_df = pd.DataFrame(target_data, index=X.index)
+        X = pd.concat([X, target_df], axis=1)
+        
         return X
 
 

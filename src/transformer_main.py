@@ -10,10 +10,10 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 from src.transformer_architecture import BitcoinTransformer
 from src.transformer_data_processor import prepare_joined_data
-from src.transformer_results import show_results
 from src.data_processor import inverse_transform_predictions
 
 from src.config import COLUMN_TO_PREDICT, HORIZON, WINDOW, BATCH_SIZE
+from src.config_manager import get_config
 from src.pipeline_tasks import (SlidingWindowDataset)
 from src.transformer_architecture import transformer_pipeline
 
@@ -34,7 +34,7 @@ def train_model(model, train_loader, epochs: int = 5, lr: float = 0.0001, verbos
         model.train()
         total_loss = 0
         for batch_x, batch_y in train_loader:
-            batch_x, batch_y = batch_x.to(device), batch_y.to(device).squeeze()
+            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
             
             optimizer.zero_grad()
             output = model(batch_x)
@@ -83,8 +83,26 @@ def predict_with_model(model, processed_df_raw, target_cols, feature_cols, ds):
     return pred_log_returns
 
 
+def run_transformer_inference(if_train: bool=False, model_path: str=None, pipeline_path: str=None, epochs: int=5, lr: float=0.0001):
     """Main function to run production inference or training."""
     # Get dynamic configuration
+    config = get_config()
+    window_size = config.get_window_size()
+    column_to_predict = config.get_column_to_predict()
+    
+    # Set default paths if not provided
+    if model_path is None:
+        model_path = f'models/transformer/{column_to_predict}/model.pkl'
+        if not if_train and not os.path.exists(model_path):
+            print(f"Model file {model_path} not found. Please train the model first.") # logger here
+            return None, None
+        
+    if pipeline_path is None:
+        pipeline_path = f'models/transformer/{column_to_predict}/feature_pipeline.pkl'
+        if not if_train and not os.path.exists(pipeline_path):
+            print(f"Pipeline file {pipeline_path} not found. Please train the model first.") # logger here
+            return None, None
+    
     full_df, processed_df_raw = prepare_joined_data()
     train_df = processed_df_raw.dropna()
 
@@ -93,13 +111,13 @@ def predict_with_model(model, processed_df_raw, target_cols, feature_cols, ds):
                     and col not in ['Open', 'High', 'Low', 'Close', 'Volume']] # Exclude raw prices
 
     # --- 2. DATASET & LOADING ---
-    ds = SlidingWindowDataset(train_df[feature_cols + target_cols], training_window_size=WINDOW, horizon_size=HORIZON, feature_cols=feature_cols)
+    ds = SlidingWindowDataset(train_df[feature_cols + target_cols], training_window_size=window_size, horizon_size=HORIZON, feature_cols=feature_cols)
 
     train_size = int(0.8 * len(ds))
     train_ds = Subset(ds, range(train_size))
     test_ds = Subset(ds, range(train_size, len(ds)))
 
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=False)
     test_loader = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
 
     # --- 3. MODEL INITIALIZATION ---
@@ -117,16 +135,11 @@ def predict_with_model(model, processed_df_raw, target_cols, feature_cols, ds):
 
     # --- 6. INVERSE TRANSFORM ---
     # Get the last HORIZON prices for inverse transformation based on COLUMN_TO_PREDICT
-    from src.config import COLUMN_TO_PREDICT
-    
-    if COLUMN_TO_PREDICT == 'Close_log_return':
+    if column_to_predict == 'Close_log_return':
         last_prices = processed_df_raw['Close'].tail(HORIZON)
     else:  # For volatility or other targets
-        last_prices = processed_df_raw[COLUMN_TO_PREDICT.replace('_log_return', '')].tail(HORIZON)
+        last_prices = processed_df_raw[column_to_predict.replace('_log_return', '')].tail(HORIZON)
     
     pred_prices = inverse_transform_predictions(pred_log_returns, last_prices)
 
-    show_results(full_df, processed_df_raw, pred_log_returns, pred_prices, show_plot=True)
-
     return pred_log_returns, pred_prices
-
