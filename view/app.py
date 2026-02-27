@@ -23,20 +23,24 @@ st.markdown("""
 
 def main():
     config = get_config()
-
     ui = BitcoinUI()
     service = PredictionService()
 
-    ui.render_header()
-    ui.render_inputs()
+    left, right = st.columns(spec=[1.5, 3.5], gap="large")
+    preds = service.get_predictions()
+    with left:
+        ui.render_header()
+        ui.render_inputs()
+        ui.render_portfolio(*preds)
+
 
     if errors := service.validate_params(config.get_window_size(), st.session_state['horizon']):
         for error in errors:
             st.warning(error)
 
-    if preds_new := service.get_predictions():
-        ui.render_plots(*preds_new)
-        ui.render_portfolio(*preds_new)
+    with right:
+        ui.render_plot_type_buttons()
+        ui.render_plots(*preds)
 
 
 if __name__ == "__main__":

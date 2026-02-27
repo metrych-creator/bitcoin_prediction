@@ -25,7 +25,6 @@ class BitcoinUI:
             <style>
             div.stButton > button {
                 height: 4em;
-                width: 12em;       
                 justify-content: center;
             }
             </style>
@@ -36,7 +35,7 @@ class BitcoinUI:
         st.header("Bitcoin Market Predictions")
     
     def render_inputs(self):
-        col1, col2, _ = st.columns(spec=[1, 1, 4])
+        col1, col2 = st.columns(spec=[1, 1])
         with col1:
             window = st.number_input("Window Size", min_value=7, max_value=365*2, value=30)
             self.config.update_from_ui(window)
@@ -44,13 +43,15 @@ class BitcoinUI:
             horizon = st.number_input("Horizon Size", min_value=1, max_value=365, value=7)
             st.session_state['horizon'] = horizon
         
+    
+    def render_plot_type_buttons(self):
         # Add plot type buttons
-        btn1, btn2, _ = st.columns(spec=[1, 1, 4], gap="small")
+        _, btn1, btn2, _ = st.columns(spec=[0.5, 1, 1, 2])
         with btn1:
-            if st.button("Close price"):
+            if st.button("Close price", width='stretch'):
                 st.session_state.current_plot = "close_price"
         with btn2:
-            if st.button("Percentage"):
+            if st.button("Percentage", width='stretch'):
                 st.session_state.current_plot = "percentage"
         
     
@@ -68,7 +69,7 @@ class BitcoinUI:
     
     def render_portfolio(self, preds_log_return, preds):
         st.header("Your Bitcoin Portfolio")
-        bit_col, _ = st.columns(spec=[1, 5])
+        bit_col, _ = st.columns(spec=[1.2, 0.8])
         
         with bit_col:
             bitcoin_amount = st.number_input(
