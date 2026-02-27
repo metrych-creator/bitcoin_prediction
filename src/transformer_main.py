@@ -126,7 +126,6 @@ def run_transformer_inference(if_train: bool=False, model_path: str=f'models/tra
     
     pred_prices = inverse_transform_predictions(pred_log_returns, last_prices)
 
-    # --- 7. RESULTS & PRICE CONVERSION ---
     show_results(full_df, processed_df_raw, pred_log_returns, pred_prices, show_plot=True)
 
     return pred_log_returns, pred_prices
