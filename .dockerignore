@@ -1,0 +1,8 @@
+.venv
+__pycache__
+*.pyc
+.git
+.env
+data/*.csv
+!data/Bitcoin_history_data.csv
+notebooks
