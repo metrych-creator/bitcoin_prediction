@@ -8,6 +8,7 @@ sys.path.insert(0, str(project_root))
 from view.components import BitcoinUI
 import streamlit as st
 from src.config_manager import get_config
+from src.utils.logger_config import logger
 
 
 st.markdown("""
@@ -22,6 +23,7 @@ st.markdown("""
 
 
 def main():
+    logger.info("Starting Bitcoin Prediction App")
     config = get_config()
     ui = BitcoinUI()
     service = PredictionService()
@@ -37,6 +39,7 @@ def main():
     if errors := service.validate_params(config.get_window_size(), st.session_state['horizon']):
         for error in errors:
             st.warning(error)
+            logger.error(f"Validation error: {error}")
 
     with right:
         ui.render_plot_type_buttons()

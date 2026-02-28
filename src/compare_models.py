@@ -21,8 +21,10 @@ from sklearn.metrics import mean_absolute_error
 from src.config import HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, MODEL_SETTINGS, OPTIMIZATION_SETTINGS, COLUMN_TO_PREDICT
 from src.hyperparameter_optimizer import load_best_model, optimize_hyperparameters
 import time
+from src.utils.logger_config import logger
 
 def save_feature_importance(model, model_name, feature_names):
+    """Save feature importance for different model types."""
     importance_df = None
     
     # LightGBM 
@@ -36,7 +38,7 @@ def save_feature_importance(model, model_name, feature_names):
                 "Importance": importance_values
             })
         except Exception as e:
-            print(f"Error getting LightGBM feature importance: {e}")
+            logger.error(f"Error getting LightGBM feature importance: {e}")
     
     # Tree-based models
     elif hasattr(model, 'feature_importances_'):
@@ -64,11 +66,12 @@ def save_feature_importance(model, model_name, feature_names):
             'Importance': np.abs(model.coef_)
         })
 
-
+    # Save feature importance
     if importance_df is not None and not importance_df.empty:
         folder_path = Path(f"data/feature_importance/{COLUMN_TO_PREDICT}")
         folder_path.mkdir(parents=True, exist_ok=True)
-        importance_df.to_csv(f"{folder_path}/{m.name}.csv", index=False)
+        importance_df.to_csv(f"{folder_path}/{model_name}.csv", index=False)
+        logger.info(f"Feature importance saved for {model_name}")
 
 
 if __name__ == '__main__':

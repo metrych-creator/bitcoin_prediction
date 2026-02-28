@@ -10,7 +10,7 @@ import warnings
 from sklearn.model_selection import GridSearchCV
 from sklearn.exceptions import ConvergenceWarning
 from .config import COLUMN_TO_PREDICT, HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, OPTIMIZATION_SETTINGS, MODEL_SETTINGS
-
+from src.utils.logger_config import logger
 # Suppress warnings during hyperparameter optimization
 warnings.filterwarnings('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
@@ -31,7 +31,7 @@ def optimize_hyperparameters(model, model_name: str, X_train: pd.DataFrame, y_tr
         optimized_model
     """
     if model_name in HYPERPARAMETER_GRIDS:
-        print(f"Optimizing hyperparameters for {model_name}...")
+        logger.info(f"Optimizing hyperparameters for {model_name}...")
         
         param_grid = HYPERPARAMETER_GRIDS[model_name]
         
@@ -52,15 +52,15 @@ def optimize_hyperparameters(model, model_name: str, X_train: pd.DataFrame, y_tr
         best_params = grid_search.best_params_
         best_score = -grid_search.best_score_
         
-        print(f"Best parameters for {model_name}: {best_params}")
-        print(f"Best CV score: {best_score:.4f}")
+        logger.info(f"Best parameters for {model_name}: {best_params}")
+        logger.info(f"Best CV score: {best_score:.4f}")
         
         _save_hyperparameters(model_name, best_params)
         _save_fitted_model(model_name, grid_search.best_estimator_)
         
         return grid_search.best_estimator_, best_params
     else:
-        print(f"No hyperparameter grid defined for {model_name}, using default parameters")
+        logger.info(f"No hyperparameter grid defined for {model_name}, using default parameters")
         return model, None
 
 
@@ -77,7 +77,7 @@ def _save_hyperparameters(model_name, best_params):
         with open(params_file, 'w') as f:
             json.dump(best_params, f, indent=2)
         
-        print(f"Saved best hyperparameters to: {params_file}")
+        logger.info(f"Saved best hyperparameters to: {params_file}")
 
 
 def _save_fitted_model(model_name, best_estimator):
@@ -90,7 +90,7 @@ def _save_fitted_model(model_name, best_estimator):
         model_file = f"{model_folder}/{model_name}.pkl"
         joblib.dump(best_estimator, model_file)
         
-        print(f"Saved fitted model to: {model_file}")
+        logger.info(f"Saved fitted model to: {model_file}")
 
 
 def load_best_hyperparameters(model_name):

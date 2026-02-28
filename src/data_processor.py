@@ -129,7 +129,7 @@ def count_days_since_last_candle(df=pd.DataFrame) -> int:
 def get_crypto_data_yahoo(symbol="BTC-USD", interval="1d", limit=500):
     """Downloads OHLCV data from Yahoo Finance API for a given cryptocurrency symbol, time interval, and data limit."""
     limit += 1
-    df = yf.download(symbol, period=f"{limit}d", interval=interval)
+    df = yf.download(symbol, period=f"{limit}d", interval=interval, progress=False)
     df = df.reset_index()
 
     # Handle MultiIndex columns if present
@@ -153,6 +153,4 @@ def get_current_price() -> float:
 
 def get_last_prices(window_size: int):
     df = get_crypto_data_yahoo(interval="1d", limit=window_size)
-    print(df.head())
-    print(df.tail())
     return df['Close'].tolist()

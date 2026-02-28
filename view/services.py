@@ -1,10 +1,14 @@
 from src.config_manager import get_config
 from src.transformer_main import run_transformer_inference
+from src.utils.logger_config import logger
 
 
 class PredictionService:
+    """Service class for handling prediction-related operations."""
+    
     def __init__(self):
         self.config = get_config()
+        logger.info("PredictionService initialized")
     
     def validate_params(self, window, horizon):
         errors = []
@@ -19,9 +23,17 @@ class PredictionService:
         return errors
     
     def get_predictions(self):
-        return run_transformer_inference()
+        try:
+            logger.info("Fetching predictions from transformer model")
+            return run_transformer_inference()
+        except Exception as e:
+            logger.error(f"Error getting predictions: {e}")
+            return None, None
     
     def calculate_portfolio_outcome(self, amount, current_price, predicted_price):
+        """Calculate bitcoin outcome based on predictions."""
+        if predicted_price is None or current_price is None:
+            return 0
         return (predicted_price - current_price) * amount
     
 

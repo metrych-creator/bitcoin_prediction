@@ -3,7 +3,7 @@ from sklearn.base import BaseEstimator
 from typing import Any
 import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
-
+from src.utils.logger_config import logger
 
 class RegressionWrapper:
     """
@@ -16,7 +16,7 @@ class RegressionWrapper:
         self.metrics = {}
 
     def train(self, X_train: pd.DataFrame , y_train: pd.Series) -> None:
-        print(f"Training of model: {self.name}...")
+        logger.info(f"Training of model: {self.name}...")
         self.model.fit(X_train, y_train)
 
     def predict(self, X_test: pd.DataFrame) -> pd.Series:

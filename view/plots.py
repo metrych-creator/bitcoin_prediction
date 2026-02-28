@@ -4,11 +4,11 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import datetime
-from turtle import st
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
 from src.data_processor import get_last_prices
+from src.utils.logger_config import logger
 
 def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_size: int=7):
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -21,6 +21,7 @@ def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_s
     dates_preds = pd.date_range(start=today+timedelta(days=1), periods=horizon_size).tolist()
     predicted_prices = predicted_prices[:horizon_size]  # take as many predictions as the horizon size
     fig = go.Figure()
+
 
     # historical
     fig.add_trace(go.Scatter(
@@ -35,7 +36,7 @@ def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_s
 
     # dashed connection
     fig.add_trace(go.Scatter(
-            x=[dates_hist[-1], dates_preds[0]], 
+            x=[dates_hist[-1], dates_preds[0]],
             y=[prices_hist[-1], predicted_prices[0]],
             mode='lines',
             name='Transition',

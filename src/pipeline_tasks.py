@@ -8,7 +8,7 @@ from src.utils.tools import add_bollinger_bands_prc, add_rsi
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
-
+from src.utils.logger_config import logger
 
 class DateFormatter(BaseEstimator, TransformerMixin):
     def __init__(self, column_name):
@@ -74,7 +74,7 @@ class DiffTransformer(BaseEstimator, TransformerMixin):
         res = adfuller(series.dropna()) # ADF test for stationarity
         p_val = res[1]
         status = "STATIONARY" if p_val <= 0.05 else "NON-STATIONARY"
-        print(f"[ADF Test] {col_name} | p-value: {p_val:.4f} -> {status}")
+        logger.info(f"[ADF Test] {col_name} | p-value: {p_val:.4f} -> {status}")
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X_copy = X.copy()

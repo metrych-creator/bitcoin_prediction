@@ -2,8 +2,8 @@
 Data processing module for Transformer model.
 """
 
+from src.utils.logger_config import logger
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import sys
 
@@ -25,7 +25,7 @@ def prepare_joined_data() -> tuple:
             - processed_df: Transformed DataFrame with engineered features, log returns, 
                            technical indicators, and target variables
     """
-    print("Preparing joined dataset...")
+    logger.info("Preparing joined dataset...")
     
     # Load historical data
     df = pd.read_csv('data/Bitcoin_history_data.csv')
@@ -48,5 +48,5 @@ def prepare_joined_data() -> tuple:
     # Apply transformations
     processed_df = transformer_pipeline.fit_transform(full_df)
     
-    print(f"Dataset prepared: {len(full_df)} total rows, {len(processed_df)} processed rows")
+    logger.info(f"Dataset prepared: {len(full_df)} total rows, {len(processed_df)} processed rows")
     return full_df, processed_df
