@@ -30,6 +30,22 @@ HYPERPARAMETER_GRIDS = {
     },
     'ARIMAX': {
         'order': [(1, 0, 1), (2, 0, 2), (3, 0, 3), (2, 1, 2), (1, 1, 1)]
+    },
+    # 'Transformer': {
+    #     'model_dim': [64, 128, 256],
+    #     'n_heads': [4, 8, 16],
+    #     'n_layers': [2, 3, 4, 6],
+    #     'dropout': [0.1, 0.2, 0.3],
+    #     'learning_rate': [0.0001, 0.001, 0.01],
+    #     'epochs': [5, 10, 20]
+    # }
+    'Transformer': {
+        'model_dim': [64],
+        'n_heads': [4],
+        'n_layers': [2],
+        'dropout': [0.1],
+        'learning_rate': [0.0001],
+        'epochs': [2, 5]
     }
 }
 
@@ -84,9 +100,32 @@ MODEL_SETTINGS = {
     }
 }
 
+# Training parameters
+TRAINING_PARAMS = {
+    'epochs': 5,
+    'learning_rate': 0.0001,
+    'batch_size': 32
+}
+
+# Data processing parameters
+DATA_PARAMS = {
+    'window_size': 365 * 2,  # 2 years
+    'horizon': 365,  # 1 year
+    'rsi_window': 14,
+    'bb_window': 20,
+    'diff_degree': 1
+}
+
+# Feature engineering parameters
+FEATURE_PARAMS = {
+    'ma_windows': [7, 30, 365],
+    'volatility_window': 7,
+    'lag_window': 6
+}
+
 COLUMN_TO_PREDICT = 'Close_log_return'
 # COLUMN_TO_PREDICT = 'Volatility_7'
 
-HORIZON = 7
-WINDOW = 30
+HORIZON = 180
+WINDOW = 365
 BATCH_SIZE = 32

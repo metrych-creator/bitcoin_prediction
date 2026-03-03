@@ -4,7 +4,7 @@ import numpy as np
 from statsmodels.tsa.stattools import adfuller
 from torch import nn
 from src.config import HORIZON, WINDOW
-from src.utils.tools import add_bollinger_bands_prc, add_rsi
+from src.utils.feature_tools import add_bollinger_bands_prc, add_rsi
 import torch
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
@@ -190,41 +190,48 @@ class TimeSeriesShifterLegacy(BaseEstimator, TransformerMixin):
 
 class SlidingWindowDataset(Dataset):
     def __init__(self, data, training_window_size: int=WINDOW, horizon_size: int=HORIZON, feature_cols: list=None):
-        self.scaler = MinMaxScaler()
-
         self.training_window_size = training_window_size
-        self.horizon_size = horizon_size
 
         # target columns (e.g. target_t+1, target_t+2...)
-        target_cols = [f'target_t+{i}' for i in range(1, self.horizon_size + 1)]
+        target_cols = [f'target_t+{i}' for i in range(1, horizon_size + 1)]
 
         # feature columns (exclude target and raw price columns)
         if feature_cols:
-            X_raw = data[feature_cols].values
+            self.X = data[feature_cols].values
         else:
-            X_raw = data.drop(columns=target_cols).values
+            self.X = data.drop(columns=target_cols).values
             
         # split target columns and features
-        y_raw = data[target_cols].values
-        
-        self.scaler_x = MinMaxScaler()
-        self.scaler_y = MinMaxScaler()
-
-        self.X = self.scaler_x.fit_transform(X_raw)
-        self.y = self.scaler_y.fit_transform(y_raw)
+        self.y = data[target_cols].values
         
         # Add input_dim attribute for compatibility with refactored code
-        self.input_dim = X_raw.shape[1] if len(X_raw.shape) > 1 else 1
+        self.input_dim = self.X.shape[1] if len(self.X.shape) > 1 else 1
 
     def __len__(self):
-        return len(self.X) - self.training_window_size
+        return max(0, len(self.X) - self.training_window_size)
 
     def __getitem__(self, idx):
         # x - window size of days, y - next day
         x = self.X[idx : idx + self.training_window_size]
         y = self.y [idx + self.training_window_size - 1]
         return torch.FloatTensor(x), torch.FloatTensor(y)
-    
+
+
+class DataFrameScaler(BaseEstimator, TransformerMixin):
+    """Scales DataFrame features using MinMaxScaler."""
+    def __init__(self):
+        self.scaler = MinMaxScaler()
+        self.columns = None
+
+    def fit(self, X, y=None):
+        self.columns = X.columns
+        self.scaler.fit(X)
+        return self
+
+    def transform(self, X):
+        X_scaled = self.scaler.transform(X)
+        return pd.DataFrame(X_scaled, index=X.index, columns=self.columns)
+
 
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len=5000):

@@ -103,18 +103,43 @@ def transform_data(train: pd.DataFrame, test: pd.DataFrame=None, pipeline: Pipel
         return X_train, y_train, X_test, y_test, pipeline
 
 
-def inverse_transform_predictions(preds_log_diff: pd.Series, original_prices: pd.Series) -> pd.Series:
+def inverse_transform_predictions(preds_log_returns: pd.Series, original_prices: pd.Series) -> pd.Series:
     """
     Converts forecasts from log-diff format back to dollars (USD).
     """
 
-    if COLUMN_TO_PREDICT not in ['Close_log_return']:
-        return preds_log_diff
+    if COLUMN_TO_PREDICT != 'Close_log_return':
+        return preds_log_returns
     
-    preds = np.array(preds_log_diff).flatten()
+    preds = np.array(preds_log_returns).flatten()
     prices = np.array(original_prices).flatten()
 
     return np.exp(np.log(prices) + preds)
+
+
+def inverse_scale_targets(pred_scaled, pipeline: Pipeline, horizon: int):
+    """
+    Inverse MinMaxScaler for prediction.
+    """
+    if 'data_scaler' not in pipeline.named_steps:
+        return pred_scaled.flatten()
+
+    scaler = pipeline.named_steps['data_scaler'].scaler
+
+    # create empty df
+    dummy = np.zeros((horizon, len(scaler.feature_names_in_)))
+    dummy_df = pd.DataFrame(dummy, columns=scaler.feature_names_in_)
+    
+    # put in predicted values
+    for i in range(1, horizon + 1):
+        col_name = f'target_t+{i}'
+        if col_name in dummy_df.columns:
+            dummy_df.loc[i-1, col_name] = pred_scaled[0, i-1]
+
+    unscaled = scaler.inverse_transform(dummy_df)
+    unscaled_df = pd.DataFrame(unscaled, columns=scaler.feature_names_in_)
+    
+    return np.array([unscaled_df.loc[i-1, f'target_t+{i}'] for i in range(1, horizon + 1)])
 
 
 def count_days_since_last_candle(df=pd.DataFrame) -> int:
