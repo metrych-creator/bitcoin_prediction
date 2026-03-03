@@ -1,5 +1,5 @@
 from src.config_manager import get_config
-from src.transformer_main import run_transformer_inference
+from src.transformer.transformer_main import run_transformer_inference
 from src.utils.logger_config import logger
 
 

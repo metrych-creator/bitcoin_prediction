@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from src.data_processor import get_last_prices
 from src.utils.logger_config import logger
 
+
 def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_size: int=7):
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -95,7 +96,6 @@ def plot_predicted_percentage_prices(predicted_prices, horizon_size=7):
         margin=dict(l=10, r=10, t=10, b=10),
         xaxis=dict(
             tickformat='%d %b', 
-            dtick="D1",         
             tickangle=-45       
         ),
         yaxis=dict(
