@@ -1,6 +1,7 @@
 from turtle import st
 import pandas as pd
 from sklearn.pipeline import Pipeline
+import torch
 from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifterLegacy
 from typing import Tuple, cast
 import numpy as np
@@ -111,7 +112,13 @@ def inverse_transform_predictions(preds_log_returns: pd.Series, original_prices:
     if COLUMN_TO_PREDICT != 'Close_log_return':
         return preds_log_returns
     
-    preds = np.array(preds_log_returns).flatten()
+    if torch.is_tensor(preds_log_returns):
+        preds = preds_log_returns.detach().cpu().numpy().flatten()
+    else:
+        preds = np.array(preds_log_returns).flatten()
+
+    # if hasattr(prices, 'detach'):
+        # prices = prices.detach().cpu().numpy()
     prices = np.array(original_prices).flatten()
 
     return np.exp(np.log(prices) + preds)

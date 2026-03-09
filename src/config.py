@@ -31,22 +31,22 @@ HYPERPARAMETER_GRIDS = {
     'ARIMAX': {
         'order': [(1, 0, 1), (2, 0, 2), (3, 0, 3), (2, 1, 2), (1, 1, 1)]
     },
-    # 'Transformer': {
-    #     'model_dim': [64, 128, 256],
-    #     'n_heads': [4, 8, 16],
-    #     'n_layers': [2, 3, 4, 6],
-    #     'dropout': [0.1, 0.2, 0.3],
-    #     'learning_rate': [0.0001, 0.001, 0.01],
-    #     'epochs': [5, 10, 20]
-    # }
     'Transformer': {
-        'model_dim': [64],
-        'n_heads': [4],
-        'n_layers': [2],
-        'dropout': [0.1],
-        'learning_rate': [0.0001],
-        'epochs': [2, 5]
+        'model_dim': [64, 128, 256],
+        'n_heads': [4, 8, 16],
+        'n_layers': [2, 3, 4],
+        'dropout': [0.1, 0.2, 0.3],
+        'learning_rate': [0.0001, 0.001],
+        'epochs': [5, 10, 20]
     }
+    # 'Transformer': {
+    #     'model_dim': [64],
+    #     'n_heads': [4],
+    #     'n_layers': [2],
+    #     'dropout': [0.1],
+    #     'learning_rate': [0.0001],
+    #     'epochs': [2, 5]
+    # }
 }
 
 # Cross-validation settings

@@ -10,9 +10,12 @@ import plotly.graph_objects as go
 from src.data_processor import get_last_prices
 from src.utils.logger_config import logger
 
-
 def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_size: int=7):
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if predicted_prices is None:
+        st.error('Not predicted prices.')
+        logger.error('Not predicted prices.')
 
     # historical
     prices_hist = get_last_prices(window_size)
@@ -77,6 +80,8 @@ def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_s
 
 
 def plot_predicted_percentage_prices(predicted_prices, horizon_size=7):
+    if hasattr(predicted_prices, 'detach'):
+        predicted_prices = predicted_prices.detach().cpu().numpy()[0]
     start_date = datetime.now() + timedelta(days=1)
     dates = pd.date_range(start=start_date, periods=horizon_size).tolist()
     predicted_prices = predicted_prices[:horizon_size]  # take as many predictions as the horizon size

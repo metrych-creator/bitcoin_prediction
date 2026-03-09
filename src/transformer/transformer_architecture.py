@@ -17,7 +17,7 @@ class BitcoinTransformer(nn.Module):
     Transformer Encoder based architecture for Time Series forecasting.
     Maps a window of historical features to a vector of future log-returns.
     """
-    def __init__(self, input_dim, model_dim=128, n_heads=8, n_layers=3, dropout=0.1):
+    def __init__(self, input_dim: int, model_dim: int=128, n_heads: int=8, n_layers: int=3, dropout: float=0.1, horizon: int=HORIZON):
         super().__init__()
         # Use centralized hyperparameters or defaults
         self.model_dim = model_dim
@@ -38,7 +38,7 @@ class BitcoinTransformer(nn.Module):
         self.transformer_encoder = nn.TransformerEncoder(encoder_layers, num_layers=n_layers)
         
         # Final linear layer to output prediction for the specified horizon
-        self.decoder = nn.Linear(model_dim, HORIZON)
+        self.decoder = nn.Linear(model_dim, horizon)
 
     def forward(self, x):
         # x shape: [batch_size, seq_len, input_dim]

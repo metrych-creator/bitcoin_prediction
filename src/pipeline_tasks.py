@@ -53,6 +53,11 @@ class LogTransformer(BaseEstimator, TransformerMixin):
         X_copy = X.copy()
         for col in self.columns:
             X_copy[f'{col}_log'] = np.log(X_copy[col])
+
+        if 'RSI' in X_copy.columns:
+            # Replace 0-100 for 0-1
+            X_copy['RSI'] = X_copy['RSI'] / 100.0
+
         return X_copy
 
     def set_output(self, transform=None):

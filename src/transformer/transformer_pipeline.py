@@ -10,6 +10,6 @@ transformer_pipeline = Pipeline([
         ('log_transformer', LogTransformer(columns=['Open', 'High', 'Low', 'Close', 'Volume'])),
         ('diff_transformer', DiffTransformer(degree=1, verbose=False)), # Make series stationary
         ('feature_engineer', FeatureEngineer()), # MAs, Volatility, Lags
-        ('data_scaler', DataFrameScaler()),
+        # ('data_scaler', DataFrameScaler()),
         ('shifter', TimeSeriesShifter(target_col=COLUMN_TO_PREDICT, horizon=HORIZON))
     ])
