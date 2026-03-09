@@ -1,5 +1,3 @@
-from pathlib import Path
-import joblib
 from matplotlib import pyplot as plt
 import seaborn as sns
 import matplotlib.dates as mdates
@@ -7,7 +5,7 @@ import pandas as pd
 from statsmodels.graphics.tsaplots import plot_pacf as sm_plot_pacf
 from statsmodels.tsa.seasonal import seasonal_decompose
 import os
-from src.config import COLUMN_TO_PREDICT, HORIZON
+from src.config import COLUMN_TO_PREDICT
 from src.config_manager import get_config
 
 def plot_close_price_by_time(df: pd.DataFrame, y='Close', title: str ="BTC Close Price Over Time", pic_name : str='close_price', show: bool=True):

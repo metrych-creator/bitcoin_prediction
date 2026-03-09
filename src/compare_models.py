@@ -1,4 +1,3 @@
-# Add the project root to Python path
 import sys
 from pathlib import Path
 project_root = Path(__file__).parent.parent
@@ -12,13 +11,11 @@ from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 from src.trainers.NaiveBaseline import NaiveBaseline
 from src.utils.plots import plot_prediction_with_residuals
-from sklearn.svm import SVR
 from xgboost import XGBRegressor
 from lightgbm import LGBMRegressor
 import numpy as np
-from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn.metrics import mean_absolute_error
-from src.config import HYPERPARAMETER_GRIDS, GRID_SEARCH_SETTINGS, MODEL_SETTINGS, OPTIMIZATION_SETTINGS, COLUMN_TO_PREDICT
+from src.config import HYPERPARAMETER_GRIDS, OPTIMIZATION_SETTINGS, COLUMN_TO_PREDICT
 from src.hyperparameter_optimizer import load_best_model, optimize_hyperparameters
 import time
 from src.utils.logger_config import logger

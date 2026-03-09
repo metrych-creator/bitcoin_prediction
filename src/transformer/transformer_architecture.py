@@ -1,14 +1,11 @@
 from torch import nn
-import pandas as pd
 import numpy as np
-import torch
-from sklearn.pipeline import Pipeline
 from pathlib import Path
 import sys
 # Set up project paths for local imports
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))   
-from src.config import COLUMN_TO_PREDICT, HORIZON, HYPERPARAMETER_GRIDS
+from src.config import HORIZON
 from src.pipeline_tasks import PositionalEncoding
 
 

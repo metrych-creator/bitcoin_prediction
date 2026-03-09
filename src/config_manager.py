@@ -3,10 +3,9 @@ Dynamic configuration manager for runtime parameter management.
 Allows UI to override hardcoded configuration values.
 """
 
-from typing import Optional, Dict, Any
 from dataclasses import dataclass
+from typing import Any, Dict
 from src.config import WINDOW, COLUMN_TO_PREDICT
-
 
 @dataclass
 class RuntimeConfig:

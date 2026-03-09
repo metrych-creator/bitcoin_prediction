@@ -1,6 +1,5 @@
 from itertools import product
 import json
-import os
 import sys
 import joblib
 import numpy as np
@@ -20,8 +19,7 @@ from src.transformer.transformer_pipeline import transformer_pipeline
 from src.utils.logger_config import logger
 from src.utils.tools import load_best_params, load_model_and_pipeline, save_best_params, save_model_and_pipeline
 from src.transformer.transformer_architecture import BitcoinTransformer
-from src.transformer.transformer_data_processor import prepare_joined_data
-from src.data_processor import inverse_scale_targets, inverse_transform_predictions
+from src.data_processor import inverse_scale_targets, inverse_transform_predictions, load_full_dataset
 from src.config import HORIZON, HYPERPARAMETER_GRIDS, WINDOW, BATCH_SIZE, TRAINING_PARAMS
 from src.config_manager import get_config
 from src.pipeline_tasks import SlidingWindowDataset
@@ -74,7 +72,7 @@ def predict_with_model(model, train_df, feature_cols):
 def _prepare_training_data():
     """Prepare training and test datasets with transformations."""
     # Prepare data and split
-    full_df = prepare_joined_data()
+    full_df = load_full_dataset()
 
     split_idx = int(len(full_df) * 0.7)
     train_raw = full_df.iloc[:split_idx]
@@ -93,10 +91,6 @@ def _prepare_training_data():
     feature_cols = [col for col in train_processed.columns if col not in target_cols 
                     and col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
     
-    # print(train_processed[feature_cols].head())
-    # print(train_processed[feature_cols].tail())
-    # print(test_processed[feature_cols].head())
-    # print(test_processed[feature_cols].tail())
 
     train_df = train_processed.dropna()
     test_df = test_processed.dropna()

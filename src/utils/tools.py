@@ -1,6 +1,6 @@
 import os
 import joblib
-from sklearn import pipeline
+from sklearn.pipeline import Pipeline
 import torch
 from src.utils.logger_config import logger
 from src.config_manager import get_config
@@ -10,7 +10,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.b
 config = get_config()
 column_to_predict = config.get_column_to_predict()
 
-def save_model_and_pipeline(model, pipeline: pipeline, model_path: str = None, pipeline_path: str = None):
+def save_model_and_pipeline(model, pipeline: Pipeline, model_path: str = None, pipeline_path: str = None):
     if model_path is None:
         model_path = f'models/transformer/{column_to_predict}/model.pkl'
 

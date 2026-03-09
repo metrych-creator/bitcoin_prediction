@@ -39,7 +39,7 @@ def run_traditional_ml_inference(model_path: str, pipeline_path: str):
         prediction_raw = model.predict(X_live)
 
         if COLUMN_TO_PREDICT in ['Close_log_return']:
-            # Cena_dzisiaj = Cena_wczoraj * exp(log_return)
+            # today_price = yesterday_price * exp(log_return)
             last_actual_price = df_live['Close'].iloc[-1]
             prediction = last_actual_price * np.exp(prediction_raw)
 
@@ -56,7 +56,3 @@ def run_traditional_ml_inference(model_path: str, pipeline_path: str):
     except Exception as e:
         print(f"Error during inference: {e}")
         return None
-
-
-# run_production_inference(f'models/{COLUMN_TO_PREDICT}/best_model.pkl', f'models/{COLUMN_TO_PREDICT}/feature_pipeline.pkl')
-

@@ -1,14 +1,13 @@
-from turtle import st
 import pandas as pd
 from sklearn.pipeline import Pipeline
-import torch
 from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifterLegacy
 from typing import Tuple, cast
 import numpy as np
+import torch
 from sklearn.model_selection import train_test_split
 from src.config import COLUMN_TO_PREDICT
 import yfinance as yf
-
+from src.utils.logger_config import logger
 
 def prepare_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -149,6 +148,37 @@ def inverse_scale_targets(pred_scaled, pipeline: Pipeline, horizon: int):
     return np.array([unscaled_df.loc[i-1, f'target_t+{i}'] for i in range(1, horizon + 1)])
 
 
+def load_full_dataset(csv_path: str = 'data/Bitcoin_history_data.csv') -> pd.DataFrame:
+    """
+    Loads historical Bitcoin data from CSV and appends the most recent candles
+    fetched live from Yahoo Finance. Deduplicates and sorts by date.
+
+    Args:
+        csv_path: Path to the historical CSV file.
+
+    Returns:
+        A DataFrame with a DatetimeIndex sorted ascending, containing all
+        historical + live OHLCV data.
+    """
+    logger.info("Preparing joined dataset...")
+
+    df = pd.read_csv(csv_path)
+
+    days_to_get = count_days_since_last_candle(df)
+    df_live = get_crypto_data_yahoo(interval="1d", limit=days_to_get)
+
+    if df_live is not None and not df_live.empty:
+        full_df = pd.concat([df, df_live], ignore_index=True)
+    else:
+        full_df = df
+
+    full_df['Date'] = pd.to_datetime(full_df['Date']).dt.normalize()
+    full_df = full_df.drop_duplicates(subset=['Date'])
+    full_df = full_df.sort_values('Date').set_index('Date')
+
+    return full_df
+
+
 def count_days_since_last_candle(df=pd.DataFrame) -> int:
     """Counts days since last candle in df till today."""
     last_date_raw = df['Date'].iloc[-1]
@@ -179,7 +209,7 @@ def get_crypto_data_yahoo(symbol="BTC-USD", interval="1d", limit=500):
 def get_current_price() -> float:
     df = get_crypto_data_yahoo(interval="1d", limit=1)
     if df is None or df.empty:
-        st.error("Error: Failed to retrieve current data from the API.")
+        logger.error("Error: Failed to retrieve current data from the API.")
         return None
     return df['Close'].iloc[-1]
 
