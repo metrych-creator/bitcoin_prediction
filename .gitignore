@@ -206,10 +206,3 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-
-# Temporary files during development
-plots/
-models/
-data/
-results/
-README.md
