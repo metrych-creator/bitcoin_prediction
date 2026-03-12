@@ -1,10 +1,10 @@
 import sys
 from pathlib import Path
-
-from view.services import PredictionService
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+from view.services import PredictionService
+from src.transformer.transformer_main import run_transformer_inference, train_with_grid_search
 from view.components import BitcoinUI
 import streamlit as st
 from src.config_manager import get_config
@@ -33,7 +33,7 @@ def main():
     with left:
         ui.render_header()
         ui.render_inputs()
-        ui.render_portfolio(*preds)
+        ui.render_portfolio(preds[1])
 
 
     if errors := service.validate_params(config.get_window_size(), st.session_state['horizon']):
@@ -46,5 +46,10 @@ def main():
         ui.render_plots(*preds)
 
 
+# if __name__ == "__main__":
+#     main()
+
 if __name__ == "__main__":
     main()
+    # train_with_grid_search()
+    # run_transformer_inference()

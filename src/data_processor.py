@@ -1,13 +1,15 @@
 import pandas as pd
 from sklearn.pipeline import Pipeline
-from src.pipeline_tasks import DateFormatter, FeatureEngineer, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifterLegacy
+from src.config_manager import get_config
+from src.pipeline_tasks import DateFormatter, FeatureEngineer, SlidingWindowDataset, TechnicalFeaturesAdder, TimeSeriesImputer, LogTransformer, DiffTransformer, TimeSeriesShifterLegacy
 from typing import Tuple, cast
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
-from src.config import COLUMN_TO_PREDICT
+from src.config import COLUMN_TO_PREDICT, HORIZON
 import yfinance as yf
 from src.utils.logger_config import logger
+from src.transformer.transformer_pipeline import transformer_pipeline
 
 def prepare_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -213,6 +215,73 @@ def get_current_price() -> float:
         return None
     return df['Close'].iloc[-1]
 
-def get_last_prices(window_size: int):
+
+def get_last_data(window_size: int):
     df = get_crypto_data_yahoo(interval="1d", limit=window_size)
-    return df['Close'].tolist()
+    return df
+
+
+def prepare_train_test_data():
+    """Prepare training and test datasets with transformations.
+
+    Returns:
+    train_df,
+    test_df,
+    feature_cols,
+    target_cols,
+    fitted pipeline
+    """
+    # Prepare data and split
+    full_df = load_full_dataset()
+
+    split_idx = int(len(full_df) * 0.7)
+    train_raw = full_df.iloc[:split_idx]
+    test_raw = full_df.iloc[split_idx:]
+
+    # Transform data
+    train_processed = transformer_pipeline.fit_transform(train_raw)
+
+    context_size = 365
+    test_with_context = pd.concat([train_raw.tail(context_size), test_raw])
+    test_processed_with_context = transformer_pipeline.transform(test_with_context)
+    test_processed = test_processed_with_context.iloc[context_size:]
+
+    # Get feature and target columns
+    target_cols = [col for col in train_processed.columns if col.startswith('target_t+')]
+    feature_cols = [col for col in train_processed.columns if col not in target_cols 
+                    and col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
+    
+
+    train_df = train_processed.dropna()
+    test_df = test_processed.dropna()
+
+    return train_df, test_df, feature_cols, target_cols, transformer_pipeline
+
+
+def prepare_predict_data(trained_pipeline: Pipeline, window: int=30):
+    """Prepare the most recent window for inference. Adds feature engineering."""
+    df = load_full_dataset()
+    _, _, feature_cols, _, _ = prepare_train_test_data()
+    
+    # feature engineering
+    df_processed = trained_pipeline.transform(df)
+
+    last_window = df_processed[feature_cols].tail(window).values
+    return last_window
+
+
+def create_datasets(train_df, test_df, feature_cols, target_cols):
+    """Create training and test datasets."""
+    config = get_config()
+    window_size = config.get_window_size()
+    
+    train_ds = SlidingWindowDataset(train_df[feature_cols + target_cols], 
+                                   training_window_size=window_size, 
+                                   horizon_size=HORIZON, 
+                                   feature_cols=feature_cols)
+    test_ds = SlidingWindowDataset(test_df[feature_cols + target_cols], 
+                                  training_window_size=window_size, 
+                                  horizon_size=HORIZON, 
+                                  feature_cols=feature_cols)
+    
+    return train_ds, test_ds

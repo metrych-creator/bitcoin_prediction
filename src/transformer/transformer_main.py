@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from pathlib import Path
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 import time
 from datetime import timedelta
 
@@ -19,100 +19,12 @@ from src.transformer.transformer_pipeline import transformer_pipeline
 from src.utils.logger_config import logger
 from src.utils.tools import load_best_params, load_model_and_pipeline, save_best_params, save_model_and_pipeline
 from src.transformer.transformer_architecture import BitcoinTransformer
-from src.data_processor import inverse_scale_targets, inverse_transform_predictions, load_full_dataset
+from src.data_processor import create_datasets, get_last_data, inverse_transform_predictions, load_full_dataset, prepare_predict_data, prepare_train_test_data
 from src.config import HORIZON, HYPERPARAMETER_GRIDS, WINDOW, BATCH_SIZE, TRAINING_PARAMS
 from src.config_manager import get_config
 from src.pipeline_tasks import SlidingWindowDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"))
-
-
-def train_model(model, train_loader, epochs: int = None, lr: float = None, verbose: bool = True):
-    # Use centralized training parameters or defaults
-    epochs = epochs or TRAINING_PARAMS['epochs']
-    lr = lr or TRAINING_PARAMS['learning_rate']
-    
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    
-    if verbose:
-        logger.info(f"Training model for {epochs} epochs with learning rate {lr} on device {device}")
-    
-    for epoch in range(epochs):
-        model.train()
-        total_loss = 0
-        for batch_x, batch_y in train_loader:
-            batch_x, batch_y = batch_x.to(device), batch_y.to(device)
-            
-            optimizer.zero_grad()
-            output = model(batch_x)
-            
-            loss = criterion(output, batch_y)
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
-        
-        if verbose and (epoch + 1) % 5 == 0:
-            logger.info(f"Epoch {epoch+1}/{epochs} | Avg MSE Loss: {total_loss/len(train_loader):.6f}")
-
-
-
-def predict_with_model(model, train_df, feature_cols):
-    model.eval()
-    with torch.no_grad():
-        # Prepare the most recent window for inference
-        last_window = train_df[feature_cols].tail(WINDOW).values
-        input_tensor = torch.FloatTensor(last_window).unsqueeze(0).to(device)
-
-        # prediction
-        pred_scaled = model(input_tensor).to(device)
-    return pred_scaled
-
-
-def _prepare_training_data():
-    """Prepare training and test datasets with transformations."""
-    # Prepare data and split
-    full_df = load_full_dataset()
-
-    split_idx = int(len(full_df) * 0.7)
-    train_raw = full_df.iloc[:split_idx]
-    test_raw = full_df.iloc[split_idx:]
-
-    # Transform data
-    train_processed = transformer_pipeline.fit_transform(train_raw)
-
-    context_size = 365
-    test_with_context = pd.concat([train_raw.tail(context_size), test_raw])
-    test_processed_with_context = transformer_pipeline.transform(test_with_context)
-    test_processed = test_processed_with_context.iloc[context_size:]
-
-    # Get feature and target columns
-    target_cols = [col for col in train_processed.columns if col.startswith('target_t+')]
-    feature_cols = [col for col in train_processed.columns if col not in target_cols 
-                    and col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
-    
-
-    train_df = train_processed.dropna()
-    test_df = test_processed.dropna()
-
-    return train_df, test_df, feature_cols, target_cols
-
-
-def _create_datasets(train_df, test_df, feature_cols, target_cols):
-    """Create training and test datasets."""
-    config = get_config()
-    window_size = config.get_window_size()
-    
-    train_ds = SlidingWindowDataset(train_df[feature_cols + target_cols], 
-                                   training_window_size=window_size, 
-                                   horizon_size=HORIZON, 
-                                   feature_cols=feature_cols)
-    test_ds = SlidingWindowDataset(test_df[feature_cols + target_cols], 
-                                  training_window_size=window_size, 
-                                  horizon_size=HORIZON, 
-                                  feature_cols=feature_cols)
-    
-    return train_ds, test_ds
 
 
 def _evaluate_model(model, test_loader):
@@ -150,8 +62,8 @@ def train_with_grid_search(verbose: bool=True):
     combinations = [dict(zip(keys, v)) for v in product(*values)]
     
     # Prepare data
-    train_df, test_df, feature_cols, target_cols = _prepare_training_data()
-    train_ds, test_ds = _create_datasets(train_df, test_df, feature_cols, target_cols)
+    train_df, test_df, feature_cols, target_cols, trained_pipeline = prepare_train_test_data()
+    train_ds, test_ds = create_datasets(train_df, test_df, feature_cols, target_cols)
 
     # Initialize tracking
     results = []
@@ -201,7 +113,7 @@ def train_with_grid_search(verbose: bool=True):
             logger.info(f"Testing combination: {params}")
 
         # Train model
-        train_model(model, train_loader, epochs=epochs, lr=lr, verbose=verbose)
+        model.run_training_loop(train_loader, epochs=epochs, lr=lr, verbose=verbose)
 
         # Evaluate model
         avg_loss = _evaluate_model(model, test_loader)
@@ -226,7 +138,7 @@ def train_with_grid_search(verbose: bool=True):
 
     # Save best model and parameters
     if best_model is not None:
-        save_model_and_pipeline(best_model, transformer_pipeline)
+        save_model_and_pipeline(best_model, trained_pipeline)
 
     total_duration = str(timedelta(seconds=int(time.time() - start_time)))
     logger.info(f'Grid search complete in {total_duration}. Best loss: {best_score:.6f}')
@@ -242,16 +154,13 @@ def run_transformer_inference(model_path: str=None, pipeline_path: str=None):
     # Get dynamic configuration
     config = get_config()
     column_to_predict = config.get_column_to_predict()
-    
-    # Prepare data for inference
-    train_df, test_df, feature_cols, target_cols = _prepare_training_data()
-    train_ds, _ = _create_datasets(train_df, test_df, feature_cols, target_cols)
-
     best_params = load_best_params(f'models/transformer/{column_to_predict}/best_params.json')
+    _, _, feature_cols, _, _ = prepare_train_test_data() # get feature_cols
+
 
     # --- 3. MODEL INITIALIZATION ---
     if best_params:
-        model = BitcoinTransformer(
+        model_shape = BitcoinTransformer(
             input_dim=len(feature_cols),
             model_dim=best_params.get('model_dim', 64),
             n_heads=best_params.get('n_heads', 4),
@@ -261,24 +170,35 @@ def run_transformer_inference(model_path: str=None, pipeline_path: str=None):
         ).to(device)
     else:
         logger.warning("Using default model architecture (no best_params found)")
-        model = BitcoinTransformer(input_dim=len(feature_cols), horizon=HORIZON).to(device)
+        model_shape = BitcoinTransformer(input_dim=len(feature_cols), horizon=HORIZON).to(device)
+
 
     # Load trained model and pipeline
-    model, pipeline = load_model_and_pipeline(model, model_path, pipeline_path)
+    model, pipeline = load_model_and_pipeline(model_shape, model_path, pipeline_path)
+
     if pipeline is None:
+        logger.info("Model/Pipeline not found. Training from scratch...")
+        pipeline = model_shape.train_with_best_params()
+
+    if pipeline is None: # if not found best_params
         return None, None
 
+    # Prepare data for inference
+    df_processed = prepare_predict_data(pipeline, window=config.get_window_size())
+
     # --- 5. PREDICT ---
-    pred_log_returns = predict_with_model(model, train_df, feature_cols)
+    pred_log_returns = model.predict(df_processed)
 
     # --- 6. INVERSE TRANSFORM ---
     # Get the last HORIZON prices for inverse transformation based on COLUMN_TO_PREDICT
+    df = load_full_dataset()
     if column_to_predict == 'Close_log_return':
-        last_prices = train_df['Close'].tail(HORIZON)
+        last_prices = df['Close'].tail(HORIZON)
     else:  # For volatility or other targets
-        last_prices = train_df[column_to_predict.replace('_log_return', '')].tail(HORIZON)
+        last_prices = df[column_to_predict.replace('_log_return', '')].tail(HORIZON)
     
     pred_prices = inverse_transform_predictions(pred_log_returns, last_prices)
+    logger.info(f'Tomorrows prediction: {pred_prices[0]}')
     return pred_log_returns, pred_prices
 
 

@@ -67,7 +67,7 @@ class BitcoinUI:
             fig = plot_predicted_percentage_prices(preds_log_return, st.session_state['horizon'])
             st.plotly_chart(fig, width='content')
     
-    def render_portfolio(self, preds_log_return, preds):
+    def render_portfolio(self, preds):
         st.header("Your Bitcoin Portfolio")
         bit_col, _ = st.columns(spec=[1.2, 0.8])
         

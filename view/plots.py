@@ -7,7 +7,7 @@ import datetime
 import pandas as pd
 from datetime import datetime, timedelta
 import plotly.graph_objects as go
-from src.data_processor import get_last_prices
+from src.data_processor import get_last_data
 from src.utils.logger_config import logger
 
 def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_size: int=7):
@@ -18,7 +18,8 @@ def plot_predicted_prices(predicted_prices: list, window_size: int=30, horizon_s
         logger.error('Not predicted prices.')
 
     # historical
-    prices_hist = get_last_prices(window_size)
+    prices_hist = get_last_data(window_size)
+    prices_hist = prices_hist['Close'].tolist()
     dates_hist = pd.date_range(end=today, periods=len(prices_hist)).tolist()
 
     # predictions

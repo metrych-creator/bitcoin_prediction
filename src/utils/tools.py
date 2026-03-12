@@ -53,7 +53,10 @@ def save_best_params(best_params, params_path: str=None) -> None:
     logger.info(f"Best params save: {best_params}")
 
 
-def load_best_params(path: str):
+def load_best_params(path: str = None):
+    if path is None:
+        path = f"models/transformer/{column_to_predict}/best_params.json"
+
     if os.path.exists(path):
         with open(path, 'r') as f:
             best_params = json.load(f)
